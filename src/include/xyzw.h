@@ -1,4 +1,4 @@
-#include "properties.h"
+//#include "properties.h"
 
 #ifndef _XYZW
 #define _XYZW
@@ -27,6 +27,7 @@ public:
 	xyzw<X> operator-(const xyzw<X> &src) { return xyzw<X>(x - src.x, y - src.y, z - src.z); }
 	xyzw<X> operator*(const xyzw<X> &src) { return xyzw<X>(x * src.x, y * src.y, z * src.z); }
 
+/*
 	bool operator==(const xyzw<X>& rhs) const 
 	{
 		return std::tie(x, y, z, w) == std::tie(rhs.x, rhs.y, rhs.z, rhs.w);
@@ -38,6 +39,7 @@ public:
 			json::property(&xyzw::z, "z"),
 			json::property(&xyzw::w, "w")
 		);
+		*/
 };
 
 #endif

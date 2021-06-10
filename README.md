@@ -1,1 +1,3 @@
-Converts TGA images into STL 3D files
+<b>World Simulation</b>
+
+Simulates real world physical processes.

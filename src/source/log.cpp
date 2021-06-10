@@ -122,8 +122,8 @@ void logger::boolToStr(char *temp, bool value)
 	//memset(temp, 0, size);
 	for(int i=0;i<size;++i) temp[i] = 0;
 	
-	if (value) temp = { "true\0" };//memcpy(temp, "true\0", 5);
-	else temp = { "false\0"};//memcpy(temp, "false\0", 6);
+	//if (value) temp = { "true\0" };//memcpy(temp, "true\0", 5);
+	//else temp = { "false\0"};//memcpy(temp, "false\0", 6);
 }
 
 #endif
