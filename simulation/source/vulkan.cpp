@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
+#include <set>
 
 void vulkan::vulkan::reset()
 {
@@ -15,12 +16,18 @@ void vulkan::vulkan::reset()
     VkPhysicalDevice vkPhysicalDevice = findDevice(index);
     if(vkPhysicalDevice == nullptr) return;
 
-    if(!createDevice(vkPhysicalDevice)) return;
+    queueFamilyIndex = 0;
 
-    if(!createWaylandWindow()) return;
+    if(!findQueueFamily(vkPhysicalDevice, queueFamilyIndex)) return;
 
-    if(!createSurface()) return;
+    if(!createWindow(index)) return;
+    if(!createSurface(vkPhysicalDevice, queueFamilyIndex)) return;
 
+    queuePresentIndex = 0;
+    if(!findQueuePresentationFamily(vkPhysicalDevice, queuePresentIndex)) return;
+
+    if(!createDevice(vkPhysicalDevice, queueFamilyIndex, queuePresentIndex)) return;
+    
     init = true;
 }
 
@@ -113,29 +120,27 @@ VkPhysicalDevice vulkan::vulkan::findDevice(uint32_t index)
             VkPhysicalDeviceProperties deviceProperties;
             vkGetPhysicalDeviceProperties(d, &deviceProperties);
 
-            if(deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
-            {
+            //if(deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            //{
                 std::cout << deviceProperties.deviceName << "\n";
                 if(index == counter) return d;
 
                 ++counter;
-            }
+            //}
         }
     }
 
     return VK_NULL_HANDLE;
 }
 
-bool vulkan::vulkan::createDevice(VkPhysicalDevice &device)
+bool vulkan::vulkan::createDevice(VkPhysicalDevice &device, uint32_t queueFamilyIndex, uint32_t queuePresentIndex)
 {
     if(device == nullptr) return false;
 
-    uint32_t index = 0;
-    if(!findQueueFamilies(device, index)) return false;
-
+    //uint32_t index = 0;
     VkDeviceQueueCreateInfo queueCreateInfo{};
     queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = index;
+    queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
     queueCreateInfo.queueCount = 1;
 
     float queuePriority = 1.0f;
@@ -143,75 +148,197 @@ bool vulkan::vulkan::createDevice(VkPhysicalDevice &device)
 
     VkPhysicalDeviceFeatures deviceFeatures{};
 
+// ***
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<uint32_t> queues = { queueFamilyIndex, queuePresentIndex };
+
+    for(uint32_t family: queues)
+    {
+        VkDeviceQueueCreateInfo queueCreateFamilyInfo{};
+        queueCreateFamilyInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateFamilyInfo.queueFamilyIndex = family;
+        queueCreateFamilyInfo.queueCount = 1;
+        queueCreateFamilyInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
+
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.queueCreateInfoCount = 1;
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.queueCreateInfoCount = queueCreateInfos.size();
 
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    return (vkCreateDevice(device, &createInfo, nullptr, &vkDevice) == VK_SUCCESS);
+    if(vkCreateDevice(device, &createInfo, nullptr, &vkDevice) != VK_SUCCESS) return false;
+
+    vkGetDeviceQueue(vkDevice, queuePresentIndex, 0, &vkPresentQueue);
+
+    return true;
 }
 
-bool vulkan::vulkan::findQueueFamilies(VkPhysicalDevice &device, uint32_t &index)
+bool vulkan::vulkan::findQueueFamily(VkPhysicalDevice &device, uint32_t &queueFamilyIndex)
 {
+    queueFamilyIndex = 0;
+
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
-    index = 0;
+    uint32_t index = 0;
+    //bool setPresent = false, setFamily = false;
     for(const auto& queueFamily:queueFamilies)
     {
-        if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) return true;
+        if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
+        {
+            queueFamilyIndex = index;
+            return true;
+        }
+
         ++index;
     }
 
     return false;
 }
 
-bool vulkan::vulkan::createSurface()
+bool vulkan::vulkan::findQueuePresentationFamily(VkPhysicalDevice &device, uint32_t &queuePresentIndex)//, uint32_t &queuePresentIn
 {
+    queuePresentIndex = 0;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    uint32_t index = 0;
+    for(const auto& queueFamily:queueFamilies)
+    {
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, index, vkSurface, &presentSupport);
+
+        if(presentSupport) 
+        {
+            queuePresentIndex = index;
+            return true;
+        }
+
+        ++index;
+    }
+
+    return false;
+}
+
+bool vulkan::vulkan::createSurface(VkPhysicalDevice &device, uint32_t queue)
+{
+    VkXlibSurfaceCreateInfoKHR createInfo{};
+
+    createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+    createInfo.dpy = display;
+    createInfo.window = window;
+
+    if(vkCreateXlibSurfaceKHR(vkInstance, &createInfo, nullptr, &vkSurface) != VK_SUCCESS) return false;
+
+    VkBool32 presentSupport = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(device, queue, vkSurface, &presentSupport);
+
+    return presentSupport;
+}
+
+/*
+bool vulkan::vulkan::createWaylandWindow()
+{
+    //wlDisplay = wl_display_connect(NULL);
+    //if(!wlDisplay) return false;
+
+    return true;
+
+        return false;
+    
     VkWaylandSurfaceCreateInfoKHR createInfo{};
 
     createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
-    createInfo.display = wlDisplay;
+    //createInfo.display = wlDisplay;
 
     VkSurfaceKHR vkSurface;
     return (vkCreateWaylandSurfaceKHR(vkInstance,&createInfo, nullptr, &vkSurface) == VK_SUCCESS);\
     
     // ****
-/*
-    VkXlibSurfaceCreateInfoKHR createInfo2{};
-
-    createInfo2.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-    //createInfo2.dpy =
-    vkCreateXlibSurfaceKHR()
+}
 */
-}
 
-bool vulkan::vulkan::createWaylandWindow()
+bool vulkan::vulkan::createWindow(uint32_t index)
 {
-    wlDisplay = wl_display_connect(NULL);
-    if(!wlDisplay) return false;
+    int x = 0, y = 0;
+    int width = 500, height = 500;
 
-    return true;
-}
+	XInitThreads();
+	
+	display = XOpenDisplay(NULL);
 /*
-bool vulkan::vulkan::createX11Window()
-{
+	GLint glxAttribs[] = {
+		GLX_RGBA,
+		GLX_DOUBLEBUFFER,
+		GLX_DEPTH_SIZE,     24,
+		GLX_STENCIL_SIZE,   8,
+		GLX_RED_SIZE,       8,
+		GLX_GREEN_SIZE,     8,
+		GLX_BLUE_SIZE,      8,
+		GLX_SAMPLE_BUFFERS, 0,
+		GLX_SAMPLES,        0,
+		None
+	};
 
-}*/
+	visual = glXChooseVisual(display, (int)deviceID, glxAttribs);
+*/
+	windowAttrib.border_pixel = BlackPixel(display, (int)index);
+	windowAttrib.background_pixel = WhitePixel(display, (int)index);
+	windowAttrib.override_redirect = True;
+	windowAttrib.colormap = XCreateColormap(display, RootWindow(display, (int)index), 
+    DefaultVisual(display, index), AllocNone);
+	windowAttrib.event_mask = ExposureMask;
+
+	window = XCreateWindow(display, RootWindow(display, (int)index), 
+    x, y, width, height, 0,
+    DefaultDepth(display, index), 
+    CopyFromParent,
+    DefaultVisual(display, index), 
+//   InputOutput, 
+    CWBackPixel | CWColormap | CWBorderPixel | CWEventMask, &windowAttrib);
+
+	XSelectInput(display, window, ExposureMask | StructureNotifyMask);
+
+	XMapWindow(display, window);
+
+	char caption[20] = "Screen\0";
+
+    XStoreName(display, window, caption);
+
+	return true;
+}
+
 void vulkan::vulkan::makeNull()
 {
     vkInstance = VK_NULL_HANDLE;
     vkDevice = VK_NULL_HANDLE;
+    vkSurface = VK_NULL_HANDLE;
+
+    display = NULL;
+    //window = NULL;
 }
 
 void vulkan::vulkan::cleanup()
 {
+    if (display != NULL)
+	{
+		XFreeColormap(display, windowAttrib.colormap);
+		XDestroyWindow(display, window);
+		XCloseDisplay(display);
+	}
+
+    if(vkSurface != VK_NULL_HANDLE) vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
     if(vkDevice != VK_NULL_HANDLE) vkDestroyDevice(vkDevice, nullptr);
     if(vkInstance != VK_NULL_HANDLE) vkDestroyInstance(vkInstance, nullptr);
 }

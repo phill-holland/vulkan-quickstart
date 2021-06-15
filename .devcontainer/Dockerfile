@@ -12,3 +12,4 @@ RUN wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key 
 RUN wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.176-focal.list https://packages.lunarg.com/vulkan/1.2.176/lunarg-vulkan-1.2.176-focal.list
 RUN apt-get update && apt-get install vulkan-sdk -y
 RUN apt-get update && apt-get install -y libwayland-dev
+RUN apt-get install libx11-dev -y

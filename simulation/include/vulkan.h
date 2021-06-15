@@ -1,8 +1,11 @@
+#include <X11/Xlib.h>
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_wayland.h>
+//#include <vulkan/vulkan_wayland.h>
+
 #include <vulkan/vulkan_xlib.h>
 #include <vector>
-#include <wayland-client.h>
+
+//#include <wayland-client.h>
 
 #ifndef _VULKAN
 #define _VULKAN
@@ -13,8 +16,16 @@ namespace vulkan
     {
         VkInstance vkInstance;
         VkDevice vkDevice;
+        VkSurfaceKHR vkSurface;
+        VkQueue vkPresentQueue;
 
-        struct wl_display *wlDisplay;
+        XSetWindowAttributes windowAttrib;
+        Display *display;
+        Window window;
+
+        uint32_t queueFamilyIndex;
+        uint32_t queuePresentIndex;
+        //struct wl_display *wlDisplay;
 
         bool init;
 
@@ -29,12 +40,15 @@ namespace vulkan
         bool createInstance();
         bool findLayers(const std::vector<const char*> &validationLayers);
         VkPhysicalDevice findDevice(uint32_t index);
-        bool createDevice(VkPhysicalDevice &device);
-        bool findQueueFamilies(VkPhysicalDevice &device, uint32_t &index);
-        bool createSurface();
+        bool createDevice(VkPhysicalDevice &device, uint32_t queueFamilyIndex, uint32_t queuePresentIndex);
+        bool findQueueFamily(VkPhysicalDevice &device, uint32_t &queueFamilyIndex);
+        bool findQueuePresentationFamily(VkPhysicalDevice &device, uint32_t &queuePresentIndex);
+        bool createSurface(VkPhysicalDevice &device, uint32_t queue);
+        //bool createQueue(uint32_t queueFamilyIndex, uint32_t queuePresentIndex);
 
     protected:
-        bool createWaylandWindow();
+        //bool createWaylandWindow();
+        bool createWindow(uint32_t index);
 
     protected:
         void makeNull();
