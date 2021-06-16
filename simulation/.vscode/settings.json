@@ -6,5 +6,6 @@
     "cmake.configureSettings": 
     {
         "CMAKE_TOOLCHAIN_FILE":"/home/phill/Documents/git/home/vcpkg/scripts/buildsystems/vcpkg.cmake"
-    }
+    },
+    "editor.autoClosingBrackets": "never"
 }

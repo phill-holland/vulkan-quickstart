@@ -22,8 +22,8 @@ public:
 
 	unsigned long entries()
 	{
-		int r = lpread.load(std::memory_order::memory_order_relaxed);
-		int w = lpwrite.load(std::memory_order::memory_order_relaxed);
+		int r = lpread.load(std::memory_order_relaxed);
+		int w = lpwrite.load(std::memory_order_relaxed);
 
 		if (w < r) return (Y - r) + w;
 
@@ -32,16 +32,16 @@ public:
 
 	bool isfull()
 	{
-		int r = lpread.load(std::memory_order::memory_order_relaxed);
-		int w = lpwrite.load(std::memory_order::memory_order_relaxed);
+		int r = lpread.load(std::memory_order_relaxed);
+		int w = lpwrite.load(std::memory_order_relaxed);
 
 		return (w - 1) == r;
 	}
 
 	bool isempty()
 	{
-		int r = lpread.load(std::memory_order::memory_order_relaxed);
-		int w = lpwrite.load(std::memory_order::memory_order_relaxed);
+		int r = lpread.load(std::memory_order_relaxed);
+		int w = lpwrite.load(std::memory_order_relaxed);
 
 		return (r == w);
 	}

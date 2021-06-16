@@ -1,4 +1,4 @@
-# Install script for directory: /home/phill/Documents/git/world-simulation/simulation
+# Install script for directory: /home/phill/Documents/git/home/world-simulation/simulation
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/phill/Documents/git/world-simulation/simulation/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/phill/Documents/git/home/world-simulation/simulation/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

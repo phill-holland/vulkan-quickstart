@@ -14,10 +14,17 @@ namespace vulkan
 {
     class vulkan
     {
+        const static int WIDTH = 800;
+        const static int HEIGHT = 600;
+
+    private:
+        int width, height;
+
         VkInstance vkInstance;
         VkDevice vkDevice;
         VkSurfaceKHR vkSurface;
         VkQueue vkPresentQueue;
+        VkSwapchainKHR vkSwapChain;
 
         XSetWindowAttributes windowAttrib;
         Display *display;
@@ -44,6 +51,9 @@ namespace vulkan
         bool findQueueFamily(VkPhysicalDevice &device, uint32_t &queueFamilyIndex);
         bool findQueuePresentationFamily(VkPhysicalDevice &device, uint32_t &queuePresentIndex);
         bool createSurface(VkPhysicalDevice &device, uint32_t queue);
+        bool findDeviceExtensionSupport(VkPhysicalDevice &device);
+        bool createSwapChain(VkPhysicalDevice &device);
+        VkExtent2D findSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
         //bool createQueue(uint32_t queueFamilyIndex, uint32_t queuePresentIndex);
 
     protected:

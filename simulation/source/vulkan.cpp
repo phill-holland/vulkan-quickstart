@@ -5,10 +5,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <set>
+#include <cstdint>
+#include <algorithm>
 
 void vulkan::vulkan::reset()
 {
     init = false; cleanup();
+
+    width = WIDTH; height = HEIGHT;
 
     if (!createInstance()) return;
 
@@ -16,8 +20,9 @@ void vulkan::vulkan::reset()
     VkPhysicalDevice vkPhysicalDevice = findDevice(index);
     if(vkPhysicalDevice == nullptr) return;
 
-    queueFamilyIndex = 0;
+    if(!findDeviceExtensionSupport(vkPhysicalDevice)) return;
 
+    queueFamilyIndex = 0;
     if(!findQueueFamily(vkPhysicalDevice, queueFamilyIndex)) return;
 
     if(!createWindow(index)) return;
@@ -27,7 +32,8 @@ void vulkan::vulkan::reset()
     if(!findQueuePresentationFamily(vkPhysicalDevice, queuePresentIndex)) return;
 
     if(!createDevice(vkPhysicalDevice, queueFamilyIndex, queuePresentIndex)) return;
-    
+    if(!createSwapChain(vkPhysicalDevice)) return;
+
     init = true;
 }
 
@@ -52,15 +58,27 @@ bool vulkan::vulkan::createInstance()
     std::vector<VkExtensionProperties> extensionProperties(extensionCount);
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, extensionProperties.data());
 
+    std::set<std::string> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME };
     std::vector<const char*> extensionNames;
 
     for(uint32_t i = 0; i < extensionCount; ++i)
     {
-        if(strcmp(extensionProperties[i].extensionName, "VK_KHR_surface_protected_capabilities") != 0)
+        std::cout << extensionProperties[i].extensionName;// << "\n";
+        bool found = false;
+        for(const auto &de:deviceExtensions)
         {
-            extensionNames.push_back(extensionProperties[i].extensionName);
-            std::cout << extensionProperties[i].extensionName << "\n";
+            //std::cout << extensionProperties[i].extensionName;// << "\n";
+            if(strcmp(extensionProperties[i].extensionName, de.c_str()) == 0)
+            {
+                extensionNames.push_back(extensionProperties[i].extensionName);
+                //std::cout << extensionProperties[i].extensionName << "\n";
+                //std::cout << "*";
+                found = true;
+            }
+            //std::cout << "\n";
         }
+        if(found) std::cout << "*\n";
+        else std::cout << "\n";
     }
 
     createInfo.enabledExtensionCount = extensionNames.size();
@@ -170,7 +188,44 @@ bool vulkan::vulkan::createDevice(VkPhysicalDevice &device, uint32_t queueFamily
 
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    if(vkCreateDevice(device, &createInfo, nullptr, &vkDevice) != VK_SUCCESS) return false;
+//***
+/*
+    uint32_t extensionCount = 0;
+    vkEnumerateDeviceExtensionProperties(vkDevice, &extensionCount, NULL);
+    std::vector<VkExtensionProperties> extensionProperties(extensionCount);
+    vkEnumerateDeviceExtensionProperties(NULL, &extensionCount, extensionProperties.data());
+
+    std::set<std::string> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME };
+    std::vector<const char*> extensionNames;
+
+    for(uint32_t i = 0; i < extensionCount; ++i)
+    {
+        std::cout << extensionProperties[i].extensionName;// << "\n";
+        bool found = false;
+        for(const auto &de:deviceExtensions)
+        {
+            
+            if(strcmp(extensionProperties[i].extensionName, de.c_str()) == 0)
+            {
+                extensionNames.push_back(extensionProperties[i].extensionName);
+                found = true;
+                //std::cout << "*";//extensionProperties[i].extensionName << "\n";
+            }
+        }
+        if(found) std::cout << "*\n";
+        else std::cout << "\n";
+    }
+*/
+    const std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
+    createInfo.enabledExtensionCount = deviceExtensions.size();//extensionNames.size();
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();//extensionNames.data();
+//***
+    //if(vkCreateDevice(device, &createInfo, nullptr, &vkDevice) != VK_SUCCESS) return false;
+    VkResult result = vkCreateDevice(device, &createInfo, nullptr, &vkDevice);
+    if(result != VK_SUCCESS) return false;
 
     vkGetDeviceQueue(vkDevice, queuePresentIndex, 0, &vkPresentQueue);
 
@@ -191,7 +246,7 @@ bool vulkan::vulkan::findQueueFamily(VkPhysicalDevice &device, uint32_t &queueFa
     //bool setPresent = false, setFamily = false;
     for(const auto& queueFamily:queueFamilies)
     {
-        if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
+        if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             queueFamilyIndex = index;
             return true;
@@ -247,6 +302,135 @@ bool vulkan::vulkan::createSurface(VkPhysicalDevice &device, uint32_t queue)
     return presentSupport;
 }
 
+bool vulkan::vulkan::findDeviceExtensionSupport(VkPhysicalDevice &device)
+{
+    std::set<std::string> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    for(const auto &extension:availableExtensions)
+    {
+        //std::cout << extension.extensionName << "\n";
+        deviceExtensions.erase(extension.extensionName);
+    }
+
+    return deviceExtensions.empty();
+}
+
+
+bool vulkan::vulkan::createSwapChain(VkPhysicalDevice &device)
+{
+    VkSurfaceFormatKHR vkSurfaceFormat;
+    VkPresentModeKHR vkPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    VkSurfaceCapabilitiesKHR vkSurfaceCapabilities;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, vkSurface, &vkSurfaceCapabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, vkSurface, &formatCount, nullptr);
+
+    if(formatCount > 0)
+    {
+        std::vector<VkSurfaceFormatKHR> formats(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, vkSurface, &formatCount, formats.data());
+
+        bool found = false;
+        for(const auto& format:formats)
+        {
+            if(format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                vkSurfaceFormat = format;
+                found = true;
+            }
+        }
+
+        if(found)
+        {
+            uint32_t presentModeCount;
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, vkSurface, &presentModeCount, nullptr);
+
+            if(presentModeCount > 0)
+            {
+                std::vector<VkPresentModeKHR> modes(presentModeCount);
+                vkGetPhysicalDeviceSurfacePresentModesKHR(device, vkSurface, &presentModeCount, modes.data());
+
+                for(const auto& mode:modes)
+                {
+                    //std::cout << mode << "\n";
+                    if(mode == VK_PRESENT_MODE_MAILBOX_KHR)
+                    {
+                        vkPresentMode = mode;
+                    }
+                }
+            }
+
+            // ****
+            VkExtent2D vkExtent = findSwapExtent(vkSurfaceCapabilities);
+
+            VkSwapchainCreateInfoKHR createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+            createInfo.surface = vkSurface;
+            createInfo.minImageCount = vkSurfaceCapabilities.minImageCount + 1;
+            createInfo.imageFormat = vkSurfaceFormat.format;
+            createInfo.imageColorSpace = vkSurfaceFormat.colorSpace;
+            createInfo.imageExtent = vkExtent;
+            createInfo.imageArrayLayers = 1;
+            createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+            if(queueFamilyIndex != queuePresentIndex)
+            {
+                uint32_t indices[] = { queueFamilyIndex, queuePresentIndex };
+                createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+                createInfo.queueFamilyIndexCount = 2;
+                createInfo.pQueueFamilyIndices = indices;
+            }
+            else
+            {
+                createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+                createInfo.queueFamilyIndexCount = 0;
+                createInfo.pQueueFamilyIndices = nullptr;
+            }
+
+            createInfo.preTransform = vkSurfaceCapabilities.currentTransform;
+            createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+            createInfo.presentMode = vkPresentMode;
+            createInfo.clipped = VK_TRUE;
+            createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+// create all extensions a problem?
+            return vkCreateSwapchainKHR(vkDevice, &createInfo, nullptr, &vkSwapChain) == VK_SUCCESS;
+
+            // ****
+
+            //return true;
+        }
+    }
+
+    return false;
+}
+
+VkExtent2D vulkan::vulkan::findSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
+{
+    if (capabilities.currentExtent.width == UINT32_MAX)
+    {
+        VkExtent2D actualExtent =
+        {
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height)
+        };
+
+        actualExtent.width = std::ranges::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        actualExtent.height = std::ranges::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+        return actualExtent;
+    }
+
+    return capabilities.currentExtent;
+}
 /*
 bool vulkan::vulkan::createWaylandWindow()
 {
@@ -272,10 +456,10 @@ bool vulkan::vulkan::createWaylandWindow()
 bool vulkan::vulkan::createWindow(uint32_t index)
 {
     int x = 0, y = 0;
-    int width = 500, height = 500;
+    //int width = 500, height = 500;
 
 	XInitThreads();
-	
+
 	display = XOpenDisplay(NULL);
 /*
 	GLint glxAttribs[] = {
@@ -296,17 +480,17 @@ bool vulkan::vulkan::createWindow(uint32_t index)
 	windowAttrib.border_pixel = BlackPixel(display, (int)index);
 	windowAttrib.background_pixel = WhitePixel(display, (int)index);
 	windowAttrib.override_redirect = True;
-	windowAttrib.colormap = XCreateColormap(display, RootWindow(display, (int)index), 
+	windowAttrib.colormap = XCreateColormap(display, RootWindow(display, (int)index),
     DefaultVisual(display, index), AllocNone);
 	windowAttrib.event_mask = ExposureMask;
 
-	window = XCreateWindow(display, RootWindow(display, (int)index), 
-    x, y, width, height, 0,
-    DefaultDepth(display, index), 
-    CopyFromParent,
-    DefaultVisual(display, index), 
-//   InputOutput, 
-    CWBackPixel | CWColormap | CWBorderPixel | CWEventMask, &windowAttrib);
+	window = XCreateWindow(display, RootWindow(display, (int)index),
+                           x, y, width, height, 0,
+                           DefaultDepth(display, index),
+                           CopyFromParent,
+                           DefaultVisual(display, index),
+                           CWBackPixel | CWColormap | CWBorderPixel | CWEventMask,
+                           &windowAttrib);
 
 	XSelectInput(display, window, ExposureMask | StructureNotifyMask);
 
@@ -323,14 +507,18 @@ void vulkan::vulkan::makeNull()
 {
     vkInstance = VK_NULL_HANDLE;
     vkDevice = VK_NULL_HANDLE;
-    vkSurface = VK_NULL_HANDLE;
 
     display = NULL;
-    //window = NULL;
+
+    vkSurface = VK_NULL_HANDLE;
+    vkSwapChain = VK_NULL_HANDLE;
 }
 
 void vulkan::vulkan::cleanup()
 {
+    if(vkSwapChain != VK_NULL_HANDLE) vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
+    if(vkSurface != VK_NULL_HANDLE) vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
+
     if (display != NULL)
 	{
 		XFreeColormap(display, windowAttrib.colormap);
@@ -338,7 +526,6 @@ void vulkan::vulkan::cleanup()
 		XCloseDisplay(display);
 	}
 
-    if(vkSurface != VK_NULL_HANDLE) vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
     if(vkDevice != VK_NULL_HANDLE) vkDestroyDevice(vkDevice, nullptr);
     if(vkInstance != VK_NULL_HANDLE) vkDestroyInstance(vkInstance, nullptr);
 }

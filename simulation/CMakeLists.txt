@@ -19,6 +19,8 @@ file(GLOB SOURCE CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/source/*.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCE})
 
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+
 target_link_libraries(${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
 target_link_libraries(${PROJECT_NAME} ${JPEG_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${ALL_LIBS})

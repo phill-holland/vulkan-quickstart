@@ -12,7 +12,7 @@ public:
 		std::atomic<int> lock;
 
 	public:
-		token() { lock.store(0, std::memory_order::memory_order_release); }
+		token() { lock.store(0, std::memory_order_release); }
 		token(const token &source) { }
 
 		bool obtain()
