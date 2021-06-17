@@ -305,6 +305,33 @@ source/mutex.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/world-simulation.dir/build.make CMakeFiles/world-simulation.dir/source/mutex.cpp.s
 .PHONY : source/mutex.cpp.s
 
+source/pipeline.o: source/pipeline.cpp.o
+
+.PHONY : source/pipeline.o
+
+# target to build an object file
+source/pipeline.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/world-simulation.dir/build.make CMakeFiles/world-simulation.dir/source/pipeline.cpp.o
+.PHONY : source/pipeline.cpp.o
+
+source/pipeline.i: source/pipeline.cpp.i
+
+.PHONY : source/pipeline.i
+
+# target to preprocess a source file
+source/pipeline.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/world-simulation.dir/build.make CMakeFiles/world-simulation.dir/source/pipeline.cpp.i
+.PHONY : source/pipeline.cpp.i
+
+source/pipeline.s: source/pipeline.cpp.s
+
+.PHONY : source/pipeline.s
+
+# target to generate assembly for a file
+source/pipeline.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/world-simulation.dir/build.make CMakeFiles/world-simulation.dir/source/pipeline.cpp.s
+.PHONY : source/pipeline.cpp.s
+
 source/pstring.o: source/pstring.cpp.o
 
 .PHONY : source/pstring.o
@@ -358,6 +385,33 @@ source/semaphore.s: source/semaphore.cpp.s
 source/semaphore.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/world-simulation.dir/build.make CMakeFiles/world-simulation.dir/source/semaphore.cpp.s
 .PHONY : source/semaphore.cpp.s
+
+source/shader.o: source/shader.cpp.o
+
+.PHONY : source/shader.o
+
+# target to build an object file
+source/shader.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/world-simulation.dir/build.make CMakeFiles/world-simulation.dir/source/shader.cpp.o
+.PHONY : source/shader.cpp.o
+
+source/shader.i: source/shader.cpp.i
+
+.PHONY : source/shader.i
+
+# target to preprocess a source file
+source/shader.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/world-simulation.dir/build.make CMakeFiles/world-simulation.dir/source/shader.cpp.i
+.PHONY : source/shader.cpp.i
+
+source/shader.s: source/shader.cpp.s
+
+.PHONY : source/shader.s
+
+# target to generate assembly for a file
+source/shader.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/world-simulation.dir/build.make CMakeFiles/world-simulation.dir/source/shader.cpp.s
+.PHONY : source/shader.cpp.s
 
 source/thread.o: source/thread.cpp.o
 
@@ -467,12 +521,18 @@ help:
 	@echo "... source/mutex.o"
 	@echo "... source/mutex.i"
 	@echo "... source/mutex.s"
+	@echo "... source/pipeline.o"
+	@echo "... source/pipeline.i"
+	@echo "... source/pipeline.s"
 	@echo "... source/pstring.o"
 	@echo "... source/pstring.i"
 	@echo "... source/pstring.s"
 	@echo "... source/semaphore.o"
 	@echo "... source/semaphore.i"
 	@echo "... source/semaphore.s"
+	@echo "... source/shader.o"
+	@echo "... source/shader.i"
+	@echo "... source/shader.s"
 	@echo "... source/thread.o"
 	@echo "... source/thread.i"
 	@echo "... source/thread.s"

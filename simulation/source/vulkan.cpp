@@ -33,11 +33,49 @@ void vulkan::vulkan::reset()
 
     if(!createDevice(vkPhysicalDevice, queueFamilyIndex, queuePresentIndex)) return;
     if(!createSwapChain(vkPhysicalDevice)) return;
+    if(!createImageViews()) return;
 
     init = true;
 }
 
-bool vulkan::vulkan::createInstance()
+vulkan::shader *vulkan::vulkan::createShader(std::string filename)
+{
+    shader *temp = new shader();
+    if(temp != NULL)
+    {
+        if(temp->create(vkDevice, filename))
+        {
+            shaders.push_back(temp);
+            return temp;
+        }
+
+        delete temp;
+    }
+
+    return NULL;
+}
+
+vulkan::pipeline *vulkan::vulkan::createPipeline(shader *vertex, shader *fragment)
+{
+    pipeline *temp = new pipeline();
+    if(temp != NULL)
+    {
+        if(temp->create(//vkDevice, vkSurfaceFormat.format, vkExtent,
+                        //swapChainImageViews, queueFamilyIndex,
+                        this,
+                        vertex, fragment))
+        {
+            pipelines.push_back(temp);
+            return temp;
+        }
+
+        delete temp;
+    }
+
+    return NULL;
+}
+
+bool vulkan::vulkan::createInstance(bool enableLayer)
 {
     VkApplicationInfo appInfo {};
 
@@ -84,15 +122,18 @@ bool vulkan::vulkan::createInstance()
     createInfo.enabledExtensionCount = extensionNames.size();
     createInfo.ppEnabledExtensionNames = extensionNames.data();
 
-    createInfo.enabledLayerCount = 0;
-    const std::vector<const char*> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
-
-    if(findLayers(validationLayers))
+    if(enableLayer)
     {
-        createInfo.enabledLayerCount = 1;
-        createInfo.ppEnabledLayerNames = validationLayers.data();
+        createInfo.enabledLayerCount = 0;
+        const std::vector<const char*> validationLayers = {
+            "VK_LAYER_KHRONOS_validation"
+        };
+
+        if(findLayers(validationLayers))
+        {
+            createInfo.enabledLayerCount = 1;
+            createInfo.ppEnabledLayerNames = validationLayers.data();
+        }
     }
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &vkInstance);
@@ -228,6 +269,7 @@ bool vulkan::vulkan::createDevice(VkPhysicalDevice &device, uint32_t queueFamily
     if(result != VK_SUCCESS) return false;
 
     vkGetDeviceQueue(vkDevice, queuePresentIndex, 0, &vkPresentQueue);
+    vkGetDeviceQueue(vkDevice, queueFamilyIndex, 0, &vkGraphicsQueue);
 
     return true;
 }
@@ -324,8 +366,9 @@ bool vulkan::vulkan::findDeviceExtensionSupport(VkPhysicalDevice &device)
 
 bool vulkan::vulkan::createSwapChain(VkPhysicalDevice &device)
 {
-    VkSurfaceFormatKHR vkSurfaceFormat;
-    VkPresentModeKHR vkPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    //VkSurfaceFormatKHR vkSurfaceFormat;
+    //VkPresentModeKHR 
+    vkPresentMode = VK_PRESENT_MODE_FIFO_KHR;
     VkSurfaceCapabilitiesKHR vkSurfaceCapabilities;
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, vkSurface, &vkSurfaceCapabilities);
@@ -369,7 +412,7 @@ bool vulkan::vulkan::createSwapChain(VkPhysicalDevice &device)
             }
 
             // ****
-            VkExtent2D vkExtent = findSwapExtent(vkSurfaceCapabilities);
+            vkExtent = findSwapExtent(vkSurfaceCapabilities);
 
             VkSwapchainCreateInfoKHR createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -401,8 +444,11 @@ bool vulkan::vulkan::createSwapChain(VkPhysicalDevice &device)
             createInfo.clipped = VK_TRUE;
             createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-// create all extensions a problem?
+
             return vkCreateSwapchainKHR(vkDevice, &createInfo, nullptr, &vkSwapChain) == VK_SUCCESS;
+
+            // ****
+
 
             // ****
 
@@ -411,6 +457,45 @@ bool vulkan::vulkan::createSwapChain(VkPhysicalDevice &device)
     }
 
     return false;
+}
+
+bool vulkan::vulkan::createImageViews()
+{
+    //std::vector<VkImageView> swapChainImageViews;
+
+    // ****
+
+    uint32_t imageCount = 0;
+    vkGetSwapchainImagesKHR(vkDevice, vkSwapChain, &imageCount, nullptr);
+
+    std::vector<VkImage> swapChainImages(imageCount);
+    vkGetSwapchainImagesKHR(vkDevice, vkSwapChain, &imageCount, swapChainImages.data());
+
+    swapChainImageViews.resize(imageCount);
+
+    for(size_t i = 0; i < swapChainImages.size(); ++i)
+    {
+        VkImageViewCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        createInfo.image = swapChainImages[i];
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.format = vkSurfaceFormat.format;
+
+        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+
+        if(vkCreateImageView(vkDevice, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS) return false;
+    }
+
+    return true;
 }
 
 VkExtent2D vulkan::vulkan::findSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
@@ -431,6 +516,11 @@ VkExtent2D vulkan::vulkan::findSwapExtent(const VkSurfaceCapabilitiesKHR &capabi
 
     return capabilities.currentExtent;
 }
+/*
+bool vulkan::vulkan::createPipeline()
+{
+}
+*/
 /*
 bool vulkan::vulkan::createWaylandWindow()
 {
@@ -516,6 +606,25 @@ void vulkan::vulkan::makeNull()
 
 void vulkan::vulkan::cleanup()
 {
+//    vkDeviceWaitIdle(vkDevice);
+
+    for(auto pipeline: pipelines)
+    {
+        pipeline->destroy();
+        delete pipeline;
+    }
+
+    for(auto shader: shaders)
+    {
+        shader->destroy(vkDevice);
+        delete shader;
+    }
+
+    for(auto imageView: swapChainImageViews)
+    {
+        vkDestroyImageView(vkDevice, imageView, nullptr);
+    }
+
     if(vkSwapChain != VK_NULL_HANDLE) vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
     if(vkSurface != VK_NULL_HANDLE) vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
 
