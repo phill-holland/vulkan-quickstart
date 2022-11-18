@@ -47,7 +47,6 @@ namespace vulkan
         bool init;
 
     public:
-    // pass in device index, width and height
         vulkan() { makeNull(); reset(); }
         ~vulkan() { cleanup(); }
 
@@ -69,9 +68,6 @@ namespace vulkan
         bool createSwapChain(VkPhysicalDevice &device);
         bool createImageViews();
         VkExtent2D findSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-
-    //protected:
-    //    bool createPipeline();
 
     protected:
         bool createWindow(uint32_t index);

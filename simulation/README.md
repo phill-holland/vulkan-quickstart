@@ -1,1 +1,0 @@
-https://vulkan-tutorial.com/en/Drawing_a_triangle/Presentation/Swap_chain

@@ -1,12 +1,11 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(world-simulation)
+project(vulkan-quickstart)
 
 set(CMAKE_BUILD_TYPE "Debug")
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-find_package(JPEG REQUIRED)
 find_package(Vulkan)
 find_package(X11 REQUIRED)
 
@@ -24,5 +23,4 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 target_link_libraries(${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
 target_link_libraries(${PROJECT_NAME} ${JPEG_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${ALL_LIBS})
-target_link_libraries(${PROJECT_NAME} wayland-client)
 target_link_libraries(${PROJECT_NAME} X11)

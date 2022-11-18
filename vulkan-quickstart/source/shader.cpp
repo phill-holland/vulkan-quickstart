@@ -21,8 +21,6 @@ bool vulkan::shader::create(VkDevice vkDevice, std::string filename)
         createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
 
         if (vkCreateShaderModule(vkDevice, &createInfo, nullptr, &vkShader) == VK_SUCCESS) return true;
-        //VkResult vkResult = vkCreateShaderModule(vkDevice, &createInfo, nullptr, &shaderModule);
-        //if(vkResult == VK_SUCCESS) return true;
     }
 
     return false;

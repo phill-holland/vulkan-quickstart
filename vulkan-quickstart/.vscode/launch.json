@@ -8,7 +8,7 @@
             "name": "g++ build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/build/world-simulation",
+            "program": "${workspaceRoot}/build/vulkan-quickstart",
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

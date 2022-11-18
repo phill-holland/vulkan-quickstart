@@ -60,10 +60,7 @@ vulkan::pipeline *vulkan::vulkan::createPipeline(shader *vertex, shader *fragmen
     pipeline *temp = new pipeline();
     if(temp != NULL)
     {
-        if(temp->create(//vkDevice, vkSurfaceFormat.format, vkExtent,
-                        //swapChainImageViews, queueFamilyIndex,
-                        this,
-                        vertex, fragment))
+        if(temp->create(this, vertex, fragment))
         {
             pipelines.push_back(temp);
             return temp;
@@ -101,19 +98,15 @@ bool vulkan::vulkan::createInstance(bool enableLayer)
 
     for(uint32_t i = 0; i < extensionCount; ++i)
     {
-        std::cout << extensionProperties[i].extensionName;// << "\n";
+        std::cout << extensionProperties[i].extensionName;
         bool found = false;
         for(const auto &de:deviceExtensions)
         {
-            //std::cout << extensionProperties[i].extensionName;// << "\n";
             if(strcmp(extensionProperties[i].extensionName, de.c_str()) == 0)
             {
                 extensionNames.push_back(extensionProperties[i].extensionName);
-                //std::cout << extensionProperties[i].extensionName << "\n";
-                //std::cout << "*";
                 found = true;
             }
-            //std::cout << "\n";
         }
         if(found) std::cout << "*\n";
         else std::cout << "\n";
@@ -196,7 +189,6 @@ bool vulkan::vulkan::createDevice(VkPhysicalDevice &device, uint32_t queueFamily
 {
     if(device == nullptr) return false;
 
-    //uint32_t index = 0;
     VkDeviceQueueCreateInfo queueCreateInfo{};
     queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
@@ -207,7 +199,6 @@ bool vulkan::vulkan::createDevice(VkPhysicalDevice &device, uint32_t queueFamily
 
     VkPhysicalDeviceFeatures deviceFeatures{};
 
-// ***
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> queues = { queueFamilyIndex, queuePresentIndex };
 
@@ -229,42 +220,13 @@ bool vulkan::vulkan::createDevice(VkPhysicalDevice &device, uint32_t queueFamily
 
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-//***
-/*
-    uint32_t extensionCount = 0;
-    vkEnumerateDeviceExtensionProperties(vkDevice, &extensionCount, NULL);
-    std::vector<VkExtensionProperties> extensionProperties(extensionCount);
-    vkEnumerateDeviceExtensionProperties(NULL, &extensionCount, extensionProperties.data());
-
-    std::set<std::string> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME };
-    std::vector<const char*> extensionNames;
-
-    for(uint32_t i = 0; i < extensionCount; ++i)
-    {
-        std::cout << extensionProperties[i].extensionName;// << "\n";
-        bool found = false;
-        for(const auto &de:deviceExtensions)
-        {
-            
-            if(strcmp(extensionProperties[i].extensionName, de.c_str()) == 0)
-            {
-                extensionNames.push_back(extensionProperties[i].extensionName);
-                found = true;
-                //std::cout << "*";//extensionProperties[i].extensionName << "\n";
-            }
-        }
-        if(found) std::cout << "*\n";
-        else std::cout << "\n";
-    }
-*/
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
-    createInfo.enabledExtensionCount = deviceExtensions.size();//extensionNames.size();
-    createInfo.ppEnabledExtensionNames = deviceExtensions.data();//extensionNames.data();
-//***
-    //if(vkCreateDevice(device, &createInfo, nullptr, &vkDevice) != VK_SUCCESS) return false;
+    createInfo.enabledExtensionCount = deviceExtensions.size();
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
     VkResult result = vkCreateDevice(device, &createInfo, nullptr, &vkDevice);
     if(result != VK_SUCCESS) return false;
 
@@ -285,7 +247,7 @@ bool vulkan::vulkan::findQueueFamily(VkPhysicalDevice &device, uint32_t &queueFa
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
     uint32_t index = 0;
-    //bool setPresent = false, setFamily = false;
+    
     for(const auto& queueFamily:queueFamilies)
     {
         if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
@@ -366,8 +328,6 @@ bool vulkan::vulkan::findDeviceExtensionSupport(VkPhysicalDevice &device)
 
 bool vulkan::vulkan::createSwapChain(VkPhysicalDevice &device)
 {
-    //VkSurfaceFormatKHR vkSurfaceFormat;
-    //VkPresentModeKHR 
     vkPresentMode = VK_PRESENT_MODE_FIFO_KHR;
     VkSurfaceCapabilitiesKHR vkSurfaceCapabilities;
 
@@ -461,10 +421,6 @@ bool vulkan::vulkan::createSwapChain(VkPhysicalDevice &device)
 
 bool vulkan::vulkan::createImageViews()
 {
-    //std::vector<VkImageView> swapChainImageViews;
-
-    // ****
-
     uint32_t imageCount = 0;
     vkGetSwapchainImagesKHR(vkDevice, vkSwapChain, &imageCount, nullptr);
 
@@ -516,57 +472,15 @@ VkExtent2D vulkan::vulkan::findSwapExtent(const VkSurfaceCapabilitiesKHR &capabi
 
     return capabilities.currentExtent;
 }
-/*
-bool vulkan::vulkan::createPipeline()
-{
-}
-*/
-/*
-bool vulkan::vulkan::createWaylandWindow()
-{
-    //wlDisplay = wl_display_connect(NULL);
-    //if(!wlDisplay) return false;
-
-    return true;
-
-        return false;
-    
-    VkWaylandSurfaceCreateInfoKHR createInfo{};
-
-    createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
-    //createInfo.display = wlDisplay;
-
-    VkSurfaceKHR vkSurface;
-    return (vkCreateWaylandSurfaceKHR(vkInstance,&createInfo, nullptr, &vkSurface) == VK_SUCCESS);\
-    
-    // ****
-}
-*/
 
 bool vulkan::vulkan::createWindow(uint32_t index)
 {
     int x = 0, y = 0;
-    //int width = 500, height = 500;
 
 	XInitThreads();
 
 	display = XOpenDisplay(NULL);
-/*
-	GLint glxAttribs[] = {
-		GLX_RGBA,
-		GLX_DOUBLEBUFFER,
-		GLX_DEPTH_SIZE,     24,
-		GLX_STENCIL_SIZE,   8,
-		GLX_RED_SIZE,       8,
-		GLX_GREEN_SIZE,     8,
-		GLX_BLUE_SIZE,      8,
-		GLX_SAMPLE_BUFFERS, 0,
-		GLX_SAMPLES,        0,
-		None
-	};
 
-	visual = glXChooseVisual(display, (int)deviceID, glxAttribs);
-*/
 	windowAttrib.border_pixel = BlackPixel(display, (int)index);
 	windowAttrib.background_pixel = WhitePixel(display, (int)index);
 	windowAttrib.override_redirect = True;
