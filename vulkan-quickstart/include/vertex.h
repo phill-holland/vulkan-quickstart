@@ -1,5 +1,6 @@
 #include <vulkan/vulkan.h>
 #include <vector>
+#include "vector.h"
 
 #ifndef _VULKAN_VERTEX
 #define _VULKAN_VERTEX
@@ -7,21 +8,11 @@
 namespace vulkan
 {
     namespace primatives
-    {
-        struct vec2
-        {
-            float x,y;
-        };
-
-        struct vec3
-        {
-            float x,y,z;
-        };
-
+    {        
         struct vertex
         {
-            vec2 position;
-            vec3 colour;
+            vector2 position;
+            vector3 colour;
 
             static VkVertexInputBindingDescription getBindingDescription() 
             {
