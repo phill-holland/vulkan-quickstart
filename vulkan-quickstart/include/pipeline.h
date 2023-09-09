@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "shader.h"
+#include "mesh.h"
 
 #ifndef _VULKAN_PIPELINE
 #define _VULKAN_PIPELINE
@@ -31,7 +32,7 @@ namespace vulkan
     private:
         pipeline() { }
 
-        bool create(vulkan *device, shader *vertex, shader *fragment);
+        bool create(vulkan *device, std::vector<shader::shader*> shaders, std::vector<mesh*> meshes);
         void destroy();
 
     public:
@@ -40,11 +41,11 @@ namespace vulkan
     protected:
         bool createRenderPass(VkDevice vkDevice, VkFormat vkFormat);
         bool createPipelineLayout(VkDevice vkDevice);
-        bool createPipeline(VkDevice vkDevice, VkExtent2D vkExtent, shader *vertex, shader *fragment);
+        bool createPipeline(VkDevice vkDevice, VkExtent2D vkExtent, std::vector<shader::shader*> shaders);
         bool createFrameBuffers(VkDevice vkDevice,  VkExtent2D vkExtent, std::vector<VkImageView> &swapChainImageViews);
         bool createCommandPool(VkDevice vkDevice, uint32_t queueFamilyIndex);
         bool createCommandBuffers(VkDevice vkDevice);
-        bool bindCommandQueue();
+        bool bindCommandQueue(std::vector<shader::shader*> shaders, std::vector<mesh*> meshes);
     };
 };
 

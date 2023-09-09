@@ -17,7 +17,7 @@ void vulkan::vulkan::reset()
     if (!createInstance()) return;
 
     uint32_t index = 0;
-    VkPhysicalDevice vkPhysicalDevice = findDevice(index);
+    vkPhysicalDevice = findDevice(index);
     if(vkPhysicalDevice == nullptr) return;
 
     if(!findDeviceExtensionSupport(vkPhysicalDevice)) return;
@@ -38,12 +38,12 @@ void vulkan::vulkan::reset()
     init = true;
 }
 
-vulkan::shader *vulkan::vulkan::createShader(std::string filename)
+vulkan::shader::shader *vulkan::vulkan::createShader(shader::parameters params)
 {
-    shader *temp = new shader();
+    shader::shader *temp = new shader::shader();
     if(temp != NULL)
     {
-        if(temp->create(vkDevice, filename))
+        if(temp->create(vkDevice, params))
         {
             shaders.push_back(temp);
             return temp;
@@ -55,12 +55,29 @@ vulkan::shader *vulkan::vulkan::createShader(std::string filename)
     return NULL;
 }
 
-vulkan::pipeline *vulkan::vulkan::createPipeline(shader *vertex, shader *fragment)
+vulkan::mesh *vulkan::vulkan::createMesh(primatives::mesh vertices)
+{
+    mesh *temp = new mesh();
+    if(temp != NULL)
+    {
+        if(temp->create(this, vertices))
+        {
+            meshes.push_back(temp);
+            return temp;
+        }
+
+        delete temp;
+    }
+
+    return NULL;
+}
+
+vulkan::pipeline *vulkan::vulkan::createPipeline(std::vector<shader::shader*> shaders, std::vector<mesh*> mesh)
 {
     pipeline *temp = new pipeline();
     if(temp != NULL)
     {
-        if(temp->create(this, vertex, fragment))
+        if(temp->create(this, shaders, mesh))
         {
             pipelines.push_back(temp);
             return temp;
@@ -473,6 +490,20 @@ VkExtent2D vulkan::vulkan::findSwapExtent(const VkSurfaceCapabilitiesKHR &capabi
     return capabilities.currentExtent;
 }
 
+uint32_t vulkan::vulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{  
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &memProperties);
+  
+    for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+    {
+        if((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+            return i;
+    }
+
+    return -1;
+}
+
 bool vulkan::vulkan::createWindow(uint32_t index)
 {
     int x = 0, y = 0;
@@ -532,6 +563,12 @@ void vulkan::vulkan::cleanup()
     {
         shader->destroy(vkDevice);
         delete shader;
+    }
+
+    for(auto mesh: meshes)
+    {
+        mesh->destroy();
+        delete mesh;
     }
 
     for(auto imageView: swapChainImageViews)

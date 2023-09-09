@@ -3,9 +3,11 @@
 #include <fstream>
 #include <vector>
 
-bool vulkan::shader::create(VkDevice vkDevice, std::string filename)
+bool vulkan::shader::shader::create(VkDevice vkDevice, parameters params)
 {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+    _params = params;
+    
+    std::ifstream file(_params.filename, std::ios::ate | std::ios::binary);
 
     if (file.is_open())
     {

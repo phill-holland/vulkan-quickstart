@@ -41,7 +41,7 @@ bool vulkan::pipeline::render()
     return true;
 }
 
-bool vulkan::pipeline::create(vulkan *device, shader *vertex, shader *fragment)
+bool vulkan::pipeline::create(vulkan *device, std::vector<shader::shader*> shaders, std::vector<mesh*> meshes)
 {
     this->device = device;
 
@@ -51,11 +51,11 @@ bool vulkan::pipeline::create(vulkan *device, shader *vertex, shader *fragment)
 
     if(!createRenderPass(this->device->vkDevice, vkFormat)) return false;
     if(!createPipelineLayout(vkDevice)) return false;
-    if(!createPipeline(vkDevice, vkExtent, vertex, fragment)) return false;
+    if(!createPipeline(vkDevice, vkExtent, shaders)) return false;
     if(!createFrameBuffers(vkDevice, vkExtent, device->swapChainImageViews)) return false;
     if(!createCommandPool(vkDevice, device->queueFamilyIndex)) return false;
     if(!createCommandBuffers(vkDevice)) return false;
-    if(!bindCommandQueue()) return false;
+    if(!bindCommandQueue(shaders, meshes)) return false;
 
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -136,28 +136,45 @@ bool vulkan::pipeline::createPipelineLayout(VkDevice vkDevice)
     return true;
 }
 
-bool vulkan::pipeline::createPipeline(VkDevice vkDevice, VkExtent2D vkExtent, shader *vertex, shader *fragment)
+bool vulkan::pipeline::createPipeline(VkDevice vkDevice, VkExtent2D vkExtent, std::vector<shader::shader*> shaders)
 {
-    VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertShaderStageInfo.module = vertex->vkShader;
-    vertShaderStageInfo.pName = "main";
-
-    VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragShaderStageInfo.module = fragment->vkShader;
-    fragShaderStageInfo.pName = "main";
-
-    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 0;
     vertexInputInfo.pVertexBindingDescriptions = nullptr;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
     vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+    std::vector<VkPipelineShaderStageCreateInfo> shaderInfo;
+
+    for(std::vector<shader::shader*>::iterator it = shaders.begin(); it < shaders.end(); ++it)
+    {
+        shader::parameters *params = &(*it)->_params;
+
+        VkPipelineShaderStageCreateInfo shaderStageInfo{};
+        shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        
+        if(params->type == shader::TYPE::vertex) 
+        {
+            shaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT; 
+            if(!params->vertexInputDescriptions.is_empty())
+            {
+                vertexInputInfo.vertexBindingDescriptionCount = 1;
+                vertexInputInfo.pVertexBindingDescriptions = &(params->vertexInputDescriptions.inputBindingDescription);
+                
+                vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(params->vertexInputDescriptions.inputAttributeDescriptions.size());
+                vertexInputInfo.pVertexAttributeDescriptions = params->vertexInputDescriptions.inputAttributeDescriptions.data();
+            }       
+        }
+        else shaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        shaderStageInfo.module = (*it)->vkShader;
+        shaderStageInfo.pName = params->name.c_str();
+
+        shaderInfo.push_back(shaderStageInfo);
+    }
+
+    VkPipelineShaderStageCreateInfo *shaderStages = &shaderInfo[0];
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -226,7 +243,7 @@ bool vulkan::pipeline::createPipeline(VkDevice vkDevice, VkExtent2D vkExtent, sh
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2;
+    pipelineInfo.stageCount = shaderInfo.size();
     pipelineInfo.pStages = shaderStages;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
@@ -297,7 +314,7 @@ bool vulkan::pipeline::createCommandBuffers(VkDevice vkDevice)
     return true;
 }
 
-bool vulkan::pipeline::bindCommandQueue()
+bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, std::vector<mesh*> meshes)
 {
     for (size_t i = 0; i < commandBuffers.size(); i++)
     {
@@ -322,7 +339,27 @@ bool vulkan::pipeline::bindCommandQueue()
 
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline);
-        vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+        
+        for(std::vector<mesh*>::iterator it = meshes.begin(); it < meshes.end(); ++it)
+        {
+            mesh *temp = (*it);
+            VkBuffer vertexBuffers[] = { temp->vkVertexBuffer };
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+            vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(temp->length), 1, 0, 0);         
+        }
+        
+        int vertices = 0;
+        for(std::vector<shader::shader*>::iterator it = shaders.begin(); it < shaders.end(); ++it)
+        {
+            shader::parameters *params = &(*it)->_params;
+            if(params->type == shader::TYPE::vertex)
+            {
+                if(params->vertices > 0) vertices = params->vertices;
+            }
+        }
+
+        if(vertices > 0) vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[i]);
 

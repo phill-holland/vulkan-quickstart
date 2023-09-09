@@ -35,7 +35,8 @@
             },
             "args": [],
             "dependsOn": [
-                "cmake"
+                "cmake",
+                "compile shaders"
             ],
             "group": "build",
             "problemMatcher": []
@@ -51,6 +52,15 @@
                 "-rfv",
                 "*"
             ],
+            "problemMatcher": []
+        },
+        {
+            "label": "compile shaders",
+            "type": "shell",
+            "command": "./compile.sh",
+            "options": {
+                "cwd": "${workspaceRoot}/shaders"
+            },
             "problemMatcher": []
         }
     ]
