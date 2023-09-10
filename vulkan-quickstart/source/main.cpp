@@ -10,10 +10,10 @@ int basicVertexAndFragmentShaders()
 {
 	vulkan::vulkan v;
 	
-	shader::shader *vertex = v.createShader(shader::parameters(std::string("assets/shaders/vert.spv"), shader::TYPE::vertex, 3 ));
+	shader::shader *vertex = v.createShader(shader::parameters(std::string("assets/shaders/compiled/vert.spv"), shader::TYPE::vertex, 3 ));
 	if(vertex == NULL) return 0;
 
-	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/frag.spv"), shader::TYPE::fragment));
+	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/compiled/frag.spv"), shader::TYPE::fragment));
 	if(fragment == NULL) return 0;
 
 	std::vector<shader::shader*> shaders;
@@ -38,14 +38,14 @@ int basicMeshShaders()
 {
 	vulkan::vulkan v;
 	
-	shader::parameters params(std::string("assets/shaders/mesh.spv"), shader::TYPE::vertex);
+	shader::parameters params(std::string("assets/shaders/compiled/mesh.spv"), shader::TYPE::vertex);
 	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
 	params.vertexInputDescriptions.inputAttributeDescriptions = primatives::vertex::getAttributeDescriptions();
 
 	shader::shader *vertex = v.createShader(params);
 	if(vertex == NULL) return 0;
 	
-	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/frag.spv"), shader::TYPE::fragment));
+	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/compiled/frag.spv"), shader::TYPE::fragment));
 	if(fragment == NULL) return 0;
 
 	std::vector<shader::shader*> shaders;
@@ -83,14 +83,14 @@ int basicLoadObjMeshShaders()
 
 	vulkan::vulkan v;
 	
-	shader::parameters params(std::string("assets/shaders/mesh.spv"), shader::TYPE::vertex);
+	shader::parameters params(std::string("assets/shaders/compiled/mesh.spv"), shader::TYPE::vertex);
 	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
 	params.vertexInputDescriptions.inputAttributeDescriptions = primatives::vertex::getAttributeDescriptions();
 
 	shader::shader *vertex = v.createShader(params);
 	if(vertex == NULL) return 0;
 	
-	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/frag.spv"), shader::TYPE::fragment));
+	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/compiled/frag.spv"), shader::TYPE::fragment));
 	if(fragment == NULL) return 0;
 
 	std::vector<shader::shader*> shaders;
@@ -118,9 +118,9 @@ int basicLoadObjMeshShaders()
 
 int main(int argc, char *argv[])
 {
-	//basicVertexAndFragmentShaders();
+	basicVertexAndFragmentShaders();
 	//basicMeshShaders();
-	basicLoadObjMeshShaders();
+	//basicLoadObjMeshShaders();
 
 	return 0;
 }
