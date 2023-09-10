@@ -1,7 +1,8 @@
 #include <chrono>
 #include <thread>
 #include "vulkan.h"
-#include "vertex.h"
+#include "primatives/vertex.h"
+#include "primatives/mesh.h"
 
 using namespace vulkan;
 
@@ -9,10 +10,10 @@ int basicVertexAndFragmentShaders()
 {
 	vulkan::vulkan v;
 	
-	shader::shader *vertex = v.createShader(shader::parameters(std::string("shaders/vert.spv"), shader::TYPE::vertex, 3 ));
+	shader::shader *vertex = v.createShader(shader::parameters(std::string("assets/shaders/vert.spv"), shader::TYPE::vertex, 3 ));
 	if(vertex == NULL) return 0;
 
-	shader::shader *fragment = v.createShader(shader::parameters(std::string("shaders/frag.spv"), shader::TYPE::fragment));
+	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/frag.spv"), shader::TYPE::fragment));
 	if(fragment == NULL) return 0;
 
 	std::vector<shader::shader*> shaders;
@@ -37,14 +38,14 @@ int basicMeshShaders()
 {
 	vulkan::vulkan v;
 	
-	shader::parameters params(std::string("shaders/mesh.spv"), shader::TYPE::vertex);
+	shader::parameters params(std::string("assets/shaders/mesh.spv"), shader::TYPE::vertex);
 	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
 	params.vertexInputDescriptions.inputAttributeDescriptions = primatives::vertex::getAttributeDescriptions();
 
 	shader::shader *vertex = v.createShader(params);
 	if(vertex == NULL) return 0;
 	
-	shader::shader *fragment = v.createShader(shader::parameters(std::string("shaders/frag.spv"), shader::TYPE::fragment));
+	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/frag.spv"), shader::TYPE::fragment));
 	if(fragment == NULL) return 0;
 
 	std::vector<shader::shader*> shaders;
@@ -55,9 +56,49 @@ int basicMeshShaders()
 	std::vector<mesh*> meshes;
 
 	primatives::mesh pmesh;
-	pmesh.vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-    				{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    				{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+	pmesh.vertices = {{{0.0f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+    				  {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+    				  {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+
+	mesh *triangle = v.createMesh(pmesh);
+	if(triangle == NULL) return 0;
+
+	meshes.push_back(triangle);
+
+	pipeline *pipeline = v.createPipeline(shaders, meshes);
+	if(pipeline == NULL) return 0;
+
+	while(true)
+	{
+		pipeline->render();
+	}
+
+	return 0;
+}
+
+int basicLoadObjMeshShaders()
+{
+	primatives::mesh pmesh;
+	if(!pmesh.load("assets/meshes/triangle.obj")) return 0;
+
+	vulkan::vulkan v;
+	
+	shader::parameters params(std::string("assets/shaders/mesh.spv"), shader::TYPE::vertex);
+	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
+	params.vertexInputDescriptions.inputAttributeDescriptions = primatives::vertex::getAttributeDescriptions();
+
+	shader::shader *vertex = v.createShader(params);
+	if(vertex == NULL) return 0;
+	
+	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/frag.spv"), shader::TYPE::fragment));
+	if(fragment == NULL) return 0;
+
+	std::vector<shader::shader*> shaders;
+
+	shaders.push_back(vertex);
+	shaders.push_back(fragment);
+
+	std::vector<mesh*> meshes;
 
 	mesh *triangle = v.createMesh(pmesh);
 	if(triangle == NULL) return 0;
@@ -78,7 +119,8 @@ int basicMeshShaders()
 int main(int argc, char *argv[])
 {
 	//basicVertexAndFragmentShaders();
-	basicMeshShaders();
+	//basicMeshShaders();
+	basicLoadObjMeshShaders();
 
 	return 0;
 }

@@ -359,7 +359,7 @@ bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, st
             }
         }
 
-        if(vertices > 0) vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
+        if(vertices > 0) vkCmdDraw(commandBuffers[i], vertices, 1, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[i]);
 

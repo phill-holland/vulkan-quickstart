@@ -59,7 +59,7 @@
             "type": "shell",
             "command": "./compile.sh",
             "options": {
-                "cwd": "${workspaceRoot}/shaders"
+                "cwd": "${workspaceRoot}/assets/shaders"
             },
             "problemMatcher": []
         }

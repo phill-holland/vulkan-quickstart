@@ -1,19 +1,29 @@
 #include <vulkan/vulkan.h>
 #include <vector>
+#include <string>
 #include "vector.h"
 
-#ifndef _VULKAN_VERTEX
-#define _VULKAN_VERTEX
+#ifndef _VULKAN_PRIMATIVE_VERTEX
+#define _VULKAN_PRIMATIVE_VERTEX
 
 namespace vulkan
 {
     namespace primatives
     {        
-        struct vertex
+        class vertex
         {
-            vector2 position;
+        public:
+            vector3 position;
             vector3 colour;
 
+        public:
+            vertex(vector3 _position = { 0.0f, 0.0f, 0.0f } , vector3 _colour = { 1.0f, 1.0f ,1.0f } )
+            {                
+                position = _position;
+                colour = _colour;
+            }
+
+        public:
             static VkVertexInputBindingDescription getBindingDescription() 
             {
                 VkVertexInputBindingDescription bindingDescription {};
@@ -33,7 +43,7 @@ namespace vulkan
                 
                 a.binding = 0;
                 a.location = 0;
-                a.format = VK_FORMAT_R32G32_SFLOAT;
+                a.format = VK_FORMAT_R32G32B32_SFLOAT;
                 a.offset = offsetof(vertex, position);
 
                 VkVertexInputAttributeDescription b;
@@ -48,11 +58,6 @@ namespace vulkan
 
                 return attributeDescription;
             }
-        };
-
-        struct mesh
-        {
-            std::vector<vertex> vertices;
         };
     }
 };

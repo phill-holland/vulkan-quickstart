@@ -5,7 +5,8 @@
 #include "shader.h"
 #include "pipeline.h"
 #include "mesh.h"
-#include "vertex.h"
+#include "primatives/vertex.h"
+#include "primatives/mesh.h"
 
 #ifndef _VULKAN
 #define _VULKAN

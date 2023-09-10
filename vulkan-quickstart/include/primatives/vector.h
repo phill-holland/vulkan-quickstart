@@ -1,5 +1,5 @@
-#ifndef _VULKAN_VECTOR
-#define _VULKAN_VECTOR
+#ifndef _VULKAN_PRIMATIVE_VECTOR
+#define _VULKAN_PRIMATIVE_VECTOR
 
 namespace vulkan
 {

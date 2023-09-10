@@ -1,5 +1,6 @@
 #include <vulkan/vulkan.h>
-#include "vertex.h"
+#include "primatives/vertex.h"
+#include "primatives/mesh.h"
 
 #ifndef _VULKAN_MESH
 #define _VULKAN_MESH

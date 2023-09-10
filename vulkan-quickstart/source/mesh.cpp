@@ -48,5 +48,3 @@ void vulkan::mesh::destroy()
     vkDestroyBuffer(vkDevice, vkVertexBuffer, nullptr);
     vkFreeMemory(vkDevice, vkVertexBufferMemory, nullptr);
 }
-
-
