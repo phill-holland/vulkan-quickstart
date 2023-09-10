@@ -26,6 +26,7 @@ namespace vulkan
                 { 
                     values[y][x] = value; 
                 }
+
                 float get(int x, int y) 
                 { 
                     return values[y][x]; 
@@ -53,7 +54,7 @@ namespace vulkan
             public:
                 translation(const vector3 &source)
                 {
-                    row(-source.x,-source.y,-source.z,1,3);
+                    row(source.x,source.y,source.z,1,3);
                 }
             };
         };
