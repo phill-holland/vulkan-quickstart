@@ -7,6 +7,8 @@
 #include "mesh.h"
 #include "primatives/vertex.h"
 #include "primatives/mesh.h"
+#include "constants.h"
+#include "buffer.h"
 
 #ifndef _VULKAN
 #define _VULKAN
@@ -22,6 +24,7 @@ namespace vulkan
 
         friend class pipeline;
         friend class mesh;
+        friend class buffer;
 
     private:
         int width, height;
@@ -42,6 +45,7 @@ namespace vulkan
 
         std::vector<shader::shader*> shaders;
         std::vector<mesh*> meshes;
+        std::vector<buffer*> buffers;
         std::vector<pipeline*> pipelines;
 
         XSetWindowAttributes windowAttrib;
@@ -62,9 +66,10 @@ namespace vulkan
 
         shader::shader *createShader(shader::parameters params);
         mesh *createMesh(primatives::mesh vertices);
+        buffer *createBuffer(void *data, size_t size);
 
     public:
-        pipeline *createPipeline(std::vector<shader::shader*> shaders, std::vector<mesh*> mesh);
+        pipeline *createPipeline(std::vector<shader::shader*> shaders, std::vector<mesh*> mesh, std::vector<buffer*> buffers, constants *constants);
 
     protected:
         bool createInstance(bool enableLayer = false);

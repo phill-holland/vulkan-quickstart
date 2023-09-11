@@ -1,5 +1,7 @@
 #include "pipeline.h"
 #include "vulkan.h"
+#include "primatives/matrix.h"
+#include <stdio.h>
 
 bool vulkan::pipeline::render()
 {
@@ -41,7 +43,7 @@ bool vulkan::pipeline::render()
     return true;
 }
 
-bool vulkan::pipeline::create(vulkan *device, std::vector<shader::shader*> shaders, std::vector<mesh*> meshes)
+bool vulkan::pipeline::create(vulkan *device, std::vector<shader::shader*> shaders, std::vector<mesh*> meshes, std::vector<buffer*> buffers, ::vulkan::constants *constants)
 {
     this->device = device;
 
@@ -50,12 +52,13 @@ bool vulkan::pipeline::create(vulkan *device, std::vector<shader::shader*> shade
     VkExtent2D vkExtent = device->vkExtent;
 
     if(!createRenderPass(this->device->vkDevice, vkFormat)) return false;
-    if(!createPipelineLayout(vkDevice)) return false;
+    if(!createBufferDescriptors(vkDevice, buffers)) return false;
+    if(!createPipelineLayout(vkDevice, constants)) return false;
     if(!createPipeline(vkDevice, vkExtent, shaders)) return false;
     if(!createFrameBuffers(vkDevice, vkExtent, device->swapChainImageViews)) return false;
     if(!createCommandPool(vkDevice, device->queueFamilyIndex)) return false;
     if(!createCommandBuffers(vkDevice)) return false;
-    if(!bindCommandQueue(shaders, meshes)) return false;
+    if(!bindCommandQueue(shaders, meshes, buffers, constants)) return false;
 
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -80,6 +83,8 @@ void vulkan::pipeline::destroy()
         vkDestroyFramebuffer(vkDevice, framebuffer, nullptr);
     }
 
+    vkDestroyDescriptorSetLayout(vkDevice, vkSetLayout, nullptr);
+    vkDestroyDescriptorPool(vkDevice, vkDescriptorPool, nullptr);
     vkDestroyPipeline(vkDevice, vkGraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(vkDevice, vkPipelineLayout, nullptr);
     vkDestroyRenderPass(vkDevice, vkRenderPass, nullptr);
@@ -122,15 +127,28 @@ bool vulkan::pipeline::createRenderPass(VkDevice vkDevice, VkFormat vkFormat)
     return true;
 }
 
-bool vulkan::pipeline::createPipelineLayout(VkDevice vkDevice)
+bool vulkan::pipeline::createPipelineLayout(VkDevice vkDevice, ::vulkan::constants *constants)
 {
+    VkPushConstantRange push_constant;
+    push_constant.offset = 0;
+    push_constant.size = sizeof(::vulkan::constants);
+    push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;    
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pSetLayouts = nullptr;
+    
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &vkSetLayout;
+    
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
+    
+    if(constants != NULL)
+    {
+        pipelineLayoutInfo.pPushConstantRanges = &push_constant;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+    }
+    
     if (vkCreatePipelineLayout(vkDevice, &pipelineLayoutInfo, nullptr, &vkPipelineLayout) != VK_SUCCESS) return false;
 
     return true;
@@ -314,7 +332,7 @@ bool vulkan::pipeline::createCommandBuffers(VkDevice vkDevice)
     return true;
 }
 
-bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, std::vector<mesh*> meshes)
+bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, std::vector<mesh*> meshes, std::vector<buffer*> buffers, ::vulkan::constants *constants)
 {
     for (size_t i = 0; i < commandBuffers.size(); i++)
     {
@@ -340,6 +358,19 @@ bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, st
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline);
         
+        if(constants != NULL)
+        {
+            vkCmdPushConstants(commandBuffers[i], vkPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(primatives::matrices::matrix4x4), constants);//&constants[0]);//t);//constants.data());
+        }
+        
+        for(std::vector<buffer*>::iterator it = buffers.begin(); it < buffers.end(); ++it)
+        {            
+            buffer *b = (*it);
+            b->update();
+
+            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,  vkPipelineLayout, 0, 1, &b->vkDescriptorSet, 0, nullptr);
+        }
+
         for(std::vector<mesh*>::iterator it = meshes.begin(); it < meshes.end(); ++it)
         {
             mesh *temp = (*it);
@@ -364,6 +395,71 @@ bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, st
         vkCmdEndRenderPass(commandBuffers[i]);
 
         if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) return false;
+    }
+
+    return true;
+}
+
+bool vulkan::pipeline::createBufferDescriptors(VkDevice vkDevice, std::vector<buffer*> buffers)
+{
+    VkDescriptorSetLayoutBinding bindings = {};
+
+    bindings.binding = 0;
+    bindings.descriptorCount = 1;
+    bindings.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    info.pNext = nullptr;
+    info.bindingCount = 1;
+    info.flags = 0;
+    info.pBindings = &bindings;
+
+    if(vkCreateDescriptorSetLayout(vkDevice, &info, nullptr, &vkSetLayout) != VK_SUCCESS) return false;
+
+    std::vector<VkDescriptorPoolSize> sizes =
+    {
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(buffers.size()) }
+    };
+
+    VkDescriptorPoolCreateInfo pool_info = {};
+    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_info.flags = 0;
+    pool_info.maxSets = 10;
+    pool_info.poolSizeCount = (uint32_t)sizes.size();
+    pool_info.pPoolSizes = sizes.data();
+
+    if(vkCreateDescriptorPool(vkDevice, &pool_info, nullptr, &vkDescriptorPool) != VK_SUCCESS) return false;
+
+    for(std::vector<buffer*>::iterator it = buffers.begin(); it < buffers.end(); ++it)
+    {
+        buffer *b = (*it);
+
+        VkDescriptorSetAllocateInfo alloc_info = {};
+        alloc_info.pNext = nullptr;
+        alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        alloc_info.descriptorPool = vkDescriptorPool;
+        alloc_info.descriptorSetCount = 1;
+        alloc_info.pSetLayouts = &vkSetLayout;
+
+        if(vkAllocateDescriptorSets(vkDevice, &alloc_info, &b->vkDescriptorSet) != VK_SUCCESS) return false;
+
+        VkDescriptorBufferInfo buffer_info;
+        buffer_info.buffer = b->vkBuffer;
+        buffer_info.offset = 0;
+        buffer_info.range = b->_length;
+
+        VkWriteDescriptorSet setWrite = {};
+        setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        setWrite.pNext = nullptr;
+        setWrite.dstBinding = 0;
+        setWrite.dstSet = b->vkDescriptorSet;
+        setWrite.descriptorCount = 1;
+        setWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        setWrite.pBufferInfo = &buffer_info;
+
+        vkUpdateDescriptorSets(vkDevice, 1, &setWrite, 0, nullptr);
     }
 
     return true;

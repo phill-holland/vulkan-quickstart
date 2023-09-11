@@ -33,13 +33,22 @@ namespace vulkan
                     return values[x][y]; 
                 }
 
-                void row(float a, float b, float c, float d, int x) 
+                void row(float a, float b, float c, float d, int y) 
                 { 
-                    values[0][x] = a; 
-                    values[1][x] = b; 
-                    values[2][x] = c; 
-                    values[3][x] = d; 
+                    values[y][0] = a; 
+                    values[y][1] = b; 
+                    values[y][2] = c; 
+                    values[y][3] = d; 
                 }
+
+                void identity()
+                {
+                    values[0][0] = 1.0f;
+                    values[1][1] = 1.0f;
+                    values[2][2] = 1.0f;
+                    values[3][3] = 1.0f;
+                }
+
 
             public:
                 void copy(const matrix4x4 &source);
@@ -55,8 +64,17 @@ namespace vulkan
             public:
                 translation(const vector3 &source)
                 {
-                    row(source.x, source.y, source.z, 1, 3);
+                    identity();
+                                        
+                    values[3][0] = source.x;
+                    values[3][1] = source.y;
+                    values[3][2] = source.z;
                 }
+
+            public:
+                void x(float value) { values[3][0] = value; }
+                void y(float value) { values[3][1] = value; }
+                void z(float value) { values[3][2] = value; }
             };
 
             class projection : public matrix4x4

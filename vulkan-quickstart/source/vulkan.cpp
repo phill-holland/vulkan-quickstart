@@ -72,12 +72,29 @@ vulkan::mesh *vulkan::vulkan::createMesh(primatives::mesh vertices)
     return NULL;
 }
 
-vulkan::pipeline *vulkan::vulkan::createPipeline(std::vector<shader::shader*> shaders, std::vector<mesh*> mesh)
+vulkan::buffer *vulkan::vulkan::createBuffer(void *data, size_t size)
+{
+    buffer *temp = new buffer();
+    if(temp != NULL)
+    {
+        if(temp->create(this, data, size))
+        {
+            buffers.push_back(temp);
+            return temp;
+        }
+
+        delete temp;
+    }
+
+    return NULL;
+}
+
+vulkan::pipeline *vulkan::vulkan::createPipeline(std::vector<shader::shader*> shaders, std::vector<mesh*> mesh, std::vector<buffer*> buffers, ::vulkan::constants *constants)
 {
     pipeline *temp = new pipeline();
     if(temp != NULL)
     {
-        if(temp->create(this, shaders, mesh))
+        if(temp->create(this, shaders, mesh, buffers, constants))
         {
             pipelines.push_back(temp);
             return temp;
@@ -552,11 +569,11 @@ void vulkan::vulkan::makeNull()
 void vulkan::vulkan::cleanup()
 {
 //    vkDeviceWaitIdle(vkDevice);
-
-    for(auto pipeline: pipelines)
+    
+    for(auto mesh: meshes)
     {
-        pipeline->destroy();
-        delete pipeline;
+        mesh->destroy();
+        delete mesh;
     }
 
     for(auto shader: shaders)
@@ -565,11 +582,18 @@ void vulkan::vulkan::cleanup()
         delete shader;
     }
 
-    for(auto mesh: meshes)
+    for(auto buffer: buffers)
     {
-        mesh->destroy();
-        delete mesh;
+        buffer->destroy();
+        delete buffer;
     }
+
+    for(auto pipeline: pipelines)
+    {
+        pipeline->destroy();
+        delete pipeline;
+    }
+        
 
     for(auto imageView: swapChainImageViews)
     {
