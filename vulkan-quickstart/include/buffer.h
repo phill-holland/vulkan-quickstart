@@ -26,10 +26,12 @@ namespace vulkan
     private:
         buffer() { }
 
-        bool create(vulkan *device, void *data, size_t size);
-        void update();
+        bool create(vulkan *device, void *data, size_t size);        
 
         void destroy();        
+
+    public:
+        void update();
     };
 };
 

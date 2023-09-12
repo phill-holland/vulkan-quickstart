@@ -77,11 +77,93 @@ namespace vulkan
                 void z(float value) { values[3][2] = value; }
             };
 
+            class scale : public matrix4x4
+            {
+            public:
+                scale(const vector3 &source)
+                {
+                    values[0][0] = source.x;
+                    values[1][1] = source.y;
+                    values[2][2] = source.z;
+                    values[3][3] = 1.0f;
+                }
+
+            public:
+                void x(float value) { values[3][0] = value; }
+                void y(float value) { values[3][1] = value; }
+                void z(float value) { values[3][2] = value; }
+            };
+
             class projection : public matrix4x4
             {
             public:
                 projection(const float fov, const float ratio, 
                            const float near, const float far);                
+            };
+
+            namespace rotation
+            {
+                class x : public matrix4x4
+                {
+                public:
+                    x(float radians)
+                    {
+                        set(radians);
+                    }
+
+                public:
+                    void set(float radians)
+                    {
+                        identity();
+
+                        values[1][1] = cosf(radians);
+                        values[2][1] = sinf(radians);
+                        values[1][2] = -sinf(radians);
+                        values[2][2] = cosf(radians);
+                    }
+                };
+
+                class y : public matrix4x4
+                {
+                public:
+                    y(float radians)
+                    {
+                        set(radians);
+                    }
+
+                public:
+                    void set(float radians)
+                    {
+                        values[0][0] = cosf(radians);
+                        values[2][0] = sinf(radians);
+                        values[0][2] = -sinf(radians);
+                        values[2][2] = cosf(radians);
+
+                        values[1][1] = 1.0f;
+                        values[3][3] = 1.0f;
+                    }
+                };
+
+                class z : public matrix4x4
+                {
+                public:
+                    z(float radians)
+                    {
+                        set(radians);
+                    }
+
+                public:
+                    void set(float radians)
+                    {
+                        values[0][0] = cosf(radians);
+                        values[1][0] = -sinf(radians);
+                        values[0][1] = sinf(radians);
+                        values[1][1] = cosf(radians);
+
+                        values[2][2] = 1.0f;
+                        values[3][3] = 1.0f;
+                    }
+                };
             };
         };
     };
