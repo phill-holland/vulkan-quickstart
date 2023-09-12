@@ -440,13 +440,6 @@ bool vulkan::vulkan::createSwapChain(VkPhysicalDevice &device)
 
 
             return vkCreateSwapchainKHR(vkDevice, &createInfo, nullptr, &vkSwapChain) == VK_SUCCESS;
-
-            // ****
-
-
-            // ****
-
-            //return true;
         }
     }
 
@@ -592,9 +585,8 @@ void vulkan::vulkan::cleanup()
     {
         pipeline->destroy();
         delete pipeline;
-    }
-        
-
+    }        
+    
     for(auto imageView: swapChainImageViews)
     {
         vkDestroyImageView(vkDevice, imageView, nullptr);

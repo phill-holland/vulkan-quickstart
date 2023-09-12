@@ -22,6 +22,10 @@ namespace vulkan
         VkPipeline vkGraphicsPipeline;
         VkCommandPool vkCommandPool;
 
+        VkImage vkDepthImage;
+        VkImageView vkDepthImageView;
+        VkDeviceMemory vkDepthImageMemory;
+
         std::vector<VkFramebuffer> swapChainFramebuffers;
         std::vector<VkCommandBuffer> commandBuffers;
 
@@ -43,6 +47,7 @@ namespace vulkan
         bool render();
 
     protected:
+        bool createDepthImage(VkDevice vkDevice, VkExtent2D vkExtent);
         bool createRenderPass(VkDevice vkDevice, VkFormat vkFormat);
         bool createPipelineLayout(VkDevice vkDevice, ::vulkan::constants* constants);
         bool createPipeline(VkDevice vkDevice, VkExtent2D vkExtent, std::vector<shader::shader*> shaders);

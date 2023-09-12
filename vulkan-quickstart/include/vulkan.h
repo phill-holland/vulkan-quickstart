@@ -81,7 +81,7 @@ namespace vulkan
         bool createSurface(VkPhysicalDevice &device, uint32_t queue);
         bool findDeviceExtensionSupport(VkPhysicalDevice &device);
         bool createSwapChain(VkPhysicalDevice &device);
-        bool createImageViews();
+        bool createImageViews();        
         VkExtent2D findSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
 
     protected:
