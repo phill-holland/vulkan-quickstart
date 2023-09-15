@@ -33,9 +33,8 @@ namespace vulkan
         VkSemaphore vkImageAvailableSemaphore;
         VkSemaphore vkRenderFinishedSemaphore;
 
-//uint32_t indirectCount;
         buffer indirectCommandBuffer;
-        //buffer indirectCountBuffer;
+        std::vector<VkDrawIndirectCommand> indirectCommands;
 
         vulkan *device;
 
@@ -50,6 +49,7 @@ namespace vulkan
 
     public:
         bool render();
+        bool update(int mesh_index, int instance_count);
 
     protected:
         bool createDepthImage(VkDevice vkDevice, VkExtent2D vkExtent);

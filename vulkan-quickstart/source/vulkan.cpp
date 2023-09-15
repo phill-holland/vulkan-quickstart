@@ -260,8 +260,9 @@ bool vulkan::vulkan::createDevice(VkPhysicalDevice &device, uint32_t queueFamily
 
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
-        VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME
+        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,        
+        VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME,
+        VK_EXT_MULTI_DRAW_EXTENSION_NAME
     };
 
     createInfo.enabledExtensionCount = deviceExtensions.size();
@@ -362,7 +363,8 @@ bool vulkan::vulkan::findDeviceExtensionSupport(VkPhysicalDevice &device)
 {
     std::set<std::string> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
                                                VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
-                                               VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME
+                                               VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME,
+                                               VK_EXT_MULTI_DRAW_EXTENSION_NAME
                                              };
 
     uint32_t extensionCount;

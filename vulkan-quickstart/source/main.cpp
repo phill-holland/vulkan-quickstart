@@ -9,7 +9,7 @@
 #include <iostream>
 
 using namespace vulkan;
-
+/*
 int basicVertexAndFragmentShaders()
 {
 	vulkan::vulkan v;
@@ -219,7 +219,7 @@ int basicMeshProjection()
 
 	return 0;
 }
-
+*/
 int basicMeshStorageBuffer()
 {
 	vulkan::vulkan v;
@@ -284,11 +284,6 @@ int basicMeshStorageBuffer()
 	vulkan::buffer *storage = v.createBuffer(matrices.data(), matrices.size() * sizeof(primatives::matrices::matrix4x4), buffer::TYPE::storage);
 	buffers.push_back(storage);
 
-    uint32_t indirectCount = 1;
-    vulkan::buffer *indirectCountBuffer = v.createBuffer(&indirectCount, sizeof(uint32_t), buffer::TYPE::count);
-	indirectCountBuffer->update();
-	buffers.push_back(indirectCountBuffer);
-
 	float fov = 90.0f;
 	float near = 0.1, far = 100.0;
 	float ar = (600.0f / 800.0f);
@@ -300,7 +295,8 @@ int basicMeshStorageBuffer()
 	if(pipeline == NULL) return 0;
 
 	float angle = 0.0f;
-
+	int instanceCount = 2;
+	int counter = 0;
 	while(true)
 	{		
 		pipeline->render();
@@ -309,10 +305,16 @@ int basicMeshStorageBuffer()
 		matrices[1] = primatives::matrices::translation({0.2f + angle,0.0f,0.0f});
 		storage->update();
 		angle += 0.00001f;
-		//t.object.copy(primatives::matrices::rotation::x(angle));
-		//buffer->update();
+
+		if(++counter > 10000)
+		{
+			if(instanceCount == 2) instanceCount = 1;
+			else instanceCount = 2;
+
+			pipeline->update(0,instanceCount);
+			counter = 0;
+		}
 	}
-	//sleep(10);
 
 	return 0;
 }

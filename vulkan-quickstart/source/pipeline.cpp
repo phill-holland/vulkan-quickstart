@@ -238,7 +238,7 @@ bool vulkan::pipeline::createPipelineLayout(VkDevice vkDevice, ::vulkan::constan
     VkDescriptorSetLayout setLayouts[] = { vkGlobalSetLayout, vkObjectSetLayout };
 
     pipelineLayoutInfo.setLayoutCount = 2;
-    pipelineLayoutInfo.pSetLayouts = setLayouts;//&vkGlobalSetLayout;
+    pipelineLayoutInfo.pSetLayouts = setLayouts;
     
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
@@ -445,8 +445,8 @@ bool vulkan::pipeline::createCommandBuffers(VkDevice vkDevice)
 }
 
 bool vulkan::pipeline::indirectDraw(std::vector<shader::shader*> shaders, std::vector<mesh*> meshes, std::vector<buffer*> buffers, ::vulkan::constants *constants)
-{    
-    std::vector<VkDrawIndirectCommand> commands;
+{        
+    indirectCommands.clear();
 
     int i = 0;
     for(std::vector<mesh*>::iterator it = meshes.begin(); it < meshes.end(); ++it)
@@ -455,27 +455,25 @@ bool vulkan::pipeline::indirectDraw(std::vector<shader::shader*> shaders, std::v
 
         VkDrawIndirectCommand cmd {};
         cmd.vertexCount = temp->length;
-        cmd.instanceCount = 2;//2; // HERE CHANGES NUMBER        
+        cmd.instanceCount = 2;
         cmd.firstVertex = 0;
         cmd.firstInstance = i;
 
-        commands.push_back(cmd);
+        indirectCommands.push_back(cmd);
 
         ++i;
-        //VkBuffer vertexBuffers[] = { temp->vkVertexBuffer };
-        //VkDeviceSize offsets[] = { 0 };
-        //vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-        //vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(temp->length), 1, 0, 0);         
     }
         
-    // need to rejig buffer::update / map commands
-    indirectCommandBuffer.create(device, commands.data(), meshes.size() * sizeof(VkDrawIndexedIndirectCommand), buffer::TYPE::indirect);
+    indirectCommandBuffer.create(device, indirectCommands.data(), meshes.size() * sizeof(VkDrawIndexedIndirectCommand), buffer::TYPE::indirect);
     indirectCommandBuffer.update();
-    // **** binding
+    
+    return true;
+}
 
-    //indirectCount = 1;
-    //indirectCountBuffer.create(device, &indirectCount, sizeof(uint32_t), buffer::TYPE::count);
-    //indirectCommandBuffer.update();
+bool vulkan::pipeline::update(int mesh_index, int instance_count)
+{
+    indirectCommands[mesh_index].instanceCount = instance_count;
+    indirectCommandBuffer.update();
 
     return true;
 }
@@ -549,14 +547,8 @@ bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, st
                 vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(temp->length), 1, 0, instances);         
             }
             */
-        
-        //vkCmdDrawIndirect(commandBuffers[i], indirectCommandBuffer.vkBuffer, indirect_offset, 2, indirect_stride);
-           if(indirectCount!=buffers.end())
-           {
-                buffer *indirectCountBuffer = (*indirectCount);
-            vkCmdDrawIndirectCount(commandBuffers[i],indirectCommandBuffer.vkBuffer, indirect_offset, 
-            indirectCountBuffer->vkBuffer,0,1,indirect_stride);
-           }
+            
+            vkCmdDrawIndirect(commandBuffers[i], indirectCommandBuffer.vkBuffer, indirect_offset, 1, indirect_stride);
 
             ++jj;
         }
@@ -619,17 +611,11 @@ bool vulkan::pipeline::createBufferDescriptors(VkDevice vkDevice, std::vector<bu
     storageInfo.pBindings = &storageBindings;
 
     if(vkCreateDescriptorSetLayout(vkDevice, &storageInfo, nullptr, &vkObjectSetLayout) != VK_SUCCESS) return false;
-
-    //int uniformedBufferCount = std::count_if(buffers.begin(), buffers.end(), isUniform);
-    //int storageBufferCount = std::count_if(buffers.begin(), buffers.end(), isStorage);
-
-    //std::vector<buffer*>::iterator uniformedBuffers = std::find_if(buffers.begin(), buffers.end(), isUniform);
-    //std::vector<buffer*>::iterator storageBuffers = std::find_if(buffers.begin(), buffers.end(), isStorage);
-
+    
     std::vector<VkDescriptorPoolSize> sizes =
     {
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },//static_cast<uint32_t>(uniformedBufferCount) },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 }//static_cast<uint32_t>(storageBufferCount) }
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 }
     };
 
     VkDescriptorPoolCreateInfo pool_info = {};
@@ -641,10 +627,8 @@ bool vulkan::pipeline::createBufferDescriptors(VkDevice vkDevice, std::vector<bu
 
     if(vkCreateDescriptorPool(vkDevice, &pool_info, nullptr, &vkDescriptorPool) != VK_SUCCESS) return false;
 
-    //while(uniformedBuffers != buffers.end())
     for(std::vector<buffer*>::iterator it = buffers.begin(); it < buffers.end(); ++it)
     {
-        //buffer *b = (*uniformedBuffers++);
         buffer *b= *it;
 
         VkDescriptorSetAllocateInfo alloc_info = {};
@@ -677,41 +661,6 @@ bool vulkan::pipeline::createBufferDescriptors(VkDevice vkDevice, std::vector<bu
 
         vkUpdateDescriptorSets(vkDevice, 1, &setWrite, 0, nullptr);
     }
-
-/*
-    while(storageBuffers != buffers.end())
-    {
-        buffer *b = (*storageBuffers++);
-
-        VkDescriptorSetAllocateInfo alloc_info = {};
-        alloc_info.pNext = nullptr;
-        alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        alloc_info.descriptorPool = vkDescriptorPool;
-        alloc_info.descriptorSetCount = 1;
-        alloc_info.pSetLayouts = &vkObjectSetLayout;
-
-        if(vkAllocateDescriptorSets(vkDevice, &alloc_info, &b->vkDescriptorSet) != VK_SUCCESS) return false;
-        //VkResult res = vkAllocateDescriptorSets(vkDevice, &alloc_info, &b->vkDescriptorSet);
-        //if(res != VK_SUCCESS) return false;
-
-
-        VkDescriptorBufferInfo buffer_info;
-        buffer_info.buffer = b->vkBuffer;
-        buffer_info.offset = 0;
-        buffer_info.range = b->_length;
-
-        VkWriteDescriptorSet setWrite = {};
-        setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        setWrite.pNext = nullptr;
-        setWrite.dstBinding = 0;
-        setWrite.dstSet = b->vkDescriptorSet;
-        setWrite.descriptorCount = 1;
-        setWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        setWrite.pBufferInfo = &buffer_info;
-
-        vkUpdateDescriptorSets(vkDevice, 1, &setWrite, 0, nullptr);
-    }
-    */
 
     return true;
 }
