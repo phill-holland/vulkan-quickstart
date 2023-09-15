@@ -17,7 +17,8 @@ namespace vulkan
     {
         VkRenderPass vkRenderPass;
         VkPipelineLayout vkPipelineLayout;
-        VkDescriptorSetLayout vkSetLayout;
+        VkDescriptorSetLayout vkGlobalSetLayout;
+        VkDescriptorSetLayout vkObjectSetLayout;
         VkDescriptorPool vkDescriptorPool;
         VkPipeline vkGraphicsPipeline;
         VkCommandPool vkCommandPool;
@@ -31,6 +32,10 @@ namespace vulkan
 
         VkSemaphore vkImageAvailableSemaphore;
         VkSemaphore vkRenderFinishedSemaphore;
+
+//uint32_t indirectCount;
+        buffer indirectCommandBuffer;
+        //buffer indirectCountBuffer;
 
         vulkan *device;
 
@@ -54,6 +59,7 @@ namespace vulkan
         bool createFrameBuffers(VkDevice vkDevice,  VkExtent2D vkExtent, std::vector<VkImageView> &swapChainImageViews);
         bool createCommandPool(VkDevice vkDevice, uint32_t queueFamilyIndex);
         bool createCommandBuffers(VkDevice vkDevice);
+        bool indirectDraw(std::vector<shader::shader*> shaders, std::vector<mesh*> meshes, std::vector<buffer*> buffers, ::vulkan::constants *constants);
         bool bindCommandQueue(std::vector<shader::shader*> shaders, std::vector<mesh*> meshes, std::vector<buffer*> buffers, ::vulkan::constants* constants);
 
     protected:

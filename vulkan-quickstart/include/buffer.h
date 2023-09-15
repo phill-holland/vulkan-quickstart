@@ -10,6 +10,16 @@ namespace vulkan
 
     class buffer
     {
+    public:
+        enum TYPE
+        {
+            uniform = 0,
+            storage = 1,
+            indirect = 2,
+            count = 3
+        };
+        
+    private:
         VkBuffer vkBuffer;
         VkDeviceMemory vkBufferMemory;
         VkDescriptorSet vkDescriptorSet;
@@ -19,6 +29,8 @@ namespace vulkan
         void *_data;
         int _length;
 
+        TYPE _type;
+
     private:
         friend class vulkan;
         friend class pipeline;
@@ -26,12 +38,16 @@ namespace vulkan
     private:
         buffer() { }
 
-        bool create(vulkan *device, void *data, size_t size);        
-
+        bool create(vulkan *device, void *data, size_t size, TYPE type = TYPE::uniform);
         void destroy();        
-
+        
+        TYPE type() { return _type; }
+        
     public:
         void update();
+
+    protected:
+        size_t alignMemoryBuffer(size_t size, TYPE type);        
     };
 };
 

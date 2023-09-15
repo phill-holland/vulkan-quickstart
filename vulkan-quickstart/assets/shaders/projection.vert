@@ -20,3 +20,5 @@ void main() {
     gl_Position = PushConstants.render_matrix * (cameraData.world * (cameraData.object * vec4(inPosition, 1.0)));
     fragColor = inColor;
 }
+
+// gl_InstanceIndex

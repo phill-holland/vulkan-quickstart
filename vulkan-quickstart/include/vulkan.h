@@ -30,6 +30,7 @@ namespace vulkan
         int width, height;
 
         VkPhysicalDevice vkPhysicalDevice;
+        VkPhysicalDeviceProperties vkPhysicalDeviceProperties;
 
         VkInstance vkInstance;
         VkDevice vkDevice;
@@ -66,7 +67,7 @@ namespace vulkan
 
         shader::shader *createShader(shader::parameters params);
         mesh *createMesh(primatives::mesh vertices);
-        buffer *createBuffer(void *data, size_t size);
+        buffer *createBuffer(void *data, size_t size, buffer::TYPE type = buffer::TYPE::uniform);
 
     public:
         pipeline *createPipeline(std::vector<shader::shader*> shaders, std::vector<mesh*> mesh, std::vector<buffer*> buffers, constants *constants);
@@ -85,7 +86,7 @@ namespace vulkan
         VkExtent2D findSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
 
     protected:
-        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);        
 
     protected:
         bool createWindow(uint32_t index);
