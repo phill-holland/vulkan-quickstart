@@ -9,7 +9,7 @@
 #include <iostream>
 
 using namespace vulkan;
-/*
+
 int basicVertexAndFragmentShaders()
 {
 	vulkan::vulkan v;
@@ -219,7 +219,7 @@ int basicMeshProjection()
 
 	return 0;
 }
-*/
+
 int basicMeshStorageBuffer()
 {
 	vulkan::vulkan v;
