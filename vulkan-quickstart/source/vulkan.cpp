@@ -208,7 +208,7 @@ VkPhysicalDevice vulkan::vulkan::findDevice(uint32_t index)
 
             //if(deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
             //{
-                std::cout << "Device [" << deviceProperties.deviceName << "," << deviceProperties.limits.minUniformBufferOffsetAlignment << "]" << "\n";
+                std::cout << "Device [" << deviceProperties.deviceName << "," << deviceProperties.limits.minUniformBufferOffsetAlignment << "," << deviceProperties.limits.minStorageBufferOffsetAlignment << "]" << "\n";
                 if(index == counter) 
                 {
                     vkPhysicalDeviceProperties = deviceProperties;

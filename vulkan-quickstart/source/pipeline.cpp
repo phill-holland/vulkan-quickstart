@@ -470,9 +470,10 @@ bool vulkan::pipeline::indirectDraw(std::vector<shader::shader*> shaders, std::v
     return true;
 }
 
-bool vulkan::pipeline::update(int mesh_index, int instance_count)
+bool vulkan::pipeline::update(int mesh_index, int instance_count, int first_instance)
 {
     indirectCommands[mesh_index].instanceCount = instance_count;
+    indirectCommands[mesh_index].firstInstance = first_instance;
     indirectCommandBuffer.update();
 
     return true;
@@ -526,10 +527,7 @@ bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, st
 
             ++kk;
         }
-
-        auto isIndirectCount = [](buffer *b) { return b->type() == buffer::TYPE::count; };
-        std::vector<buffer*>::iterator indirectCount = std::find_if(buffers.begin(), buffers.end(), isIndirectCount);
-
+        
         int jj = 0;
         for(std::vector<mesh*>::iterator it = meshes.begin(); it < meshes.end(); ++it)
         {
@@ -541,12 +539,14 @@ bool vulkan::pipeline::bindCommandQueue(std::vector<shader::shader*> shaders, st
             VkDeviceSize indirect_offset = jj * sizeof(VkDrawIndirectCommand);
             uint32_t indirect_stride = sizeof(VkDrawIndirectCommand);
             
+            
             /*
             for(int instances = 0; instances < 2; ++instances)
             {                
                 vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(temp->length), 1, 0, instances);         
             }
             */
+            
             
             vkCmdDrawIndirect(commandBuffers[i], indirectCommandBuffer.vkBuffer, indirect_offset, 1, indirect_stride);
 

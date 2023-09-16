@@ -49,7 +49,7 @@ namespace vulkan
 
     public:
         bool render();
-        bool update(int mesh_index, int instance_count);
+        bool update(int mesh_index, int instance_count, int first_instance);
 
     protected:
         bool createDepthImage(VkDevice vkDevice, VkExtent2D vkExtent);

@@ -172,13 +172,42 @@ int basicMeshProjection()
 					  {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
 					  {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
 					  {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-					  {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}
+					  {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+
+					  {{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+					  {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+				  	  {{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+					  {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+					  					  					  					  
+					  {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+					  {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+					  {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+
+					  {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+    				  {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    				  {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+					  {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+					  {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+
+					  {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+    				  {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+					  {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+					  {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}
+    				  
 					  };
 	
-	mesh *triangle = v.createMesh(pmesh);
-	if(triangle == NULL) return 0;
+	mesh *cube = v.createMesh(pmesh);
+	if(cube == NULL) return 0;
 
-	meshes.push_back(triangle);
+	meshes.push_back(cube);
 
 	std::vector<buffer*> buffers;
 
@@ -212,8 +241,8 @@ int basicMeshProjection()
 	{
 		pipeline->render();
 
-		angle += 0.0001f;
-		t.object.copy(primatives::matrices::rotation::x(angle));
+		angle += 0.0003f;
+		t.object.copy(primatives::matrices::rotation::x(angle) * primatives::matrices::rotation::z(angle));
 		buffer->update();
 	}
 
@@ -311,9 +340,142 @@ int basicMeshStorageBuffer()
 			if(instanceCount == 2) instanceCount = 1;
 			else instanceCount = 2;
 
-			pipeline->update(0,instanceCount);
+			pipeline->update(0,instanceCount, 0);
 			counter = 0;
 		}
+	}
+
+	return 0;
+}
+
+int basicMeshMultipleObjectsWithStorageBuffer()
+{
+	vulkan::vulkan v;
+	
+	shader::parameters params(std::string("assets/shaders/compiled/multi.spv"), shader::TYPE::vertex);
+	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
+	params.vertexInputDescriptions.inputAttributeDescriptions = primatives::vertex::getAttributeDescriptions();
+
+	shader::shader *vertex = v.createShader(params);
+	if(vertex == NULL) return 0;
+	
+	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/compiled/frag.spv"), shader::TYPE::fragment));
+	if(fragment == NULL) return 0;
+
+	std::vector<shader::shader*> shaders;
+
+	shaders.push_back(vertex);
+	shaders.push_back(fragment);
+
+	std::vector<mesh*> meshes;
+
+	primatives::mesh _triangle;
+	_triangle.vertices = {{{0.0f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+    				     {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+    				     {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}
+					     };
+	
+	primatives::mesh _square;
+	_square.vertices = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+    				  {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+    				  {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+					  {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+					  {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+					  {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}
+					  };
+
+	mesh *triangle = v.createMesh(_triangle);
+	if(triangle == NULL) return 0;
+
+	mesh *square = v.createMesh(_square);
+	if(square == NULL) return 0;
+
+	meshes.push_back(triangle);
+	meshes.push_back(square);
+
+	std::vector<buffer*> buffers;
+
+	class transformations
+	{
+	public:
+		primatives::matrices::matrix4x4 world;
+		primatives::matrices::matrix4x4 object;
+	};
+
+	transformations t;
+	t.world = primatives::matrices::translation({0.8f,-0.8f,-3.8f});
+	t.object.identity();
+
+	vulkan::buffer *buffer = v.createBuffer(&t, sizeof(transformations));
+	buffers.push_back(buffer);
+
+	class object
+	{
+	public:
+		primatives::matrices::matrix4x4 position;
+		primatives::matrices::matrix4x4 matrix;
+	};
+
+	std::vector<object> matrices, b_matrices;
+
+	int width = 2, height = 2;
+	float x_increment = 1.5f, y_increment = 1.5f;
+	float start_x = -((width / 2) * x_increment);
+	float start_y = -((height / 2) * y_increment);
+
+	for(int y = 0; y < height; ++y)
+	{
+		float y_pos = start_y + (y_increment * ((float)y));
+		for(int x = 0; x < width; ++x)
+		{			
+			float x_pos = start_x + (x_increment * ((float)x));
+			object temp;	
+
+			temp.position = primatives::matrices::translation({x_pos,y_pos,0.0f});
+			temp.matrix.identity();
+			matrices.push_back(temp);
+
+			temp.position = primatives::matrices::translation({x_pos,y_pos + ((float)height) + y_increment,0.0f});
+			b_matrices.push_back(temp);
+		}
+	}
+
+	matrices.insert(matrices.end(), b_matrices.begin(), b_matrices.end());
+	
+	vulkan::buffer *storage = v.createBuffer(matrices.data(), matrices.size() * sizeof(object), buffer::TYPE::storage);
+	buffers.push_back(storage);
+
+	float fov = 90.0f;
+	float near = 0.1, far = 100.0;
+	float ar = (600.0f / 800.0f);
+
+	::vulkan::constants constants;
+	constants.m = primatives::matrices::projection(fov, ar, near, far);
+
+	pipeline *pipeline = v.createPipeline(shaders, meshes, buffers, &constants);
+	if(pipeline == NULL) return 0;
+
+	pipeline->update(0, 4, 0);
+	pipeline->update(1, 4, 4);
+
+	float angle = 0.0f;
+
+	while(true)
+	{		
+		pipeline->render();
+
+		for(int i = 0; i < matrices.size() / 2; ++i)
+		{
+			matrices[i].matrix = primatives::matrices::rotation::z(-angle);		
+		}
+
+		for(int i = matrices.size() / 2; i < matrices.size(); ++i)
+		{
+			matrices[i].matrix = primatives::matrices::rotation::y(angle);		
+		}
+
+		storage->update();
+		angle += 0.0005f;
 	}
 
 	return 0;
@@ -325,7 +487,8 @@ int main(int argc, char *argv[])
 	//basicMeshShaders();
 	//basicLoadObjMeshShaders();
 	//basicMeshProjection();
-	basicMeshStorageBuffer();
+	//basicMeshStorageBuffer();
+	basicMeshMultipleObjectsWithStorageBuffer();
 
 	return 0;
 }
