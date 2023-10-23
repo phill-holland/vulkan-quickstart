@@ -9,6 +9,7 @@
 #include "primatives/mesh.h"
 #include "constants.h"
 #include "buffer.h"
+#include "interfaces/window.h"
 
 #ifndef _VULKAN
 #define _VULKAN
@@ -19,9 +20,6 @@ namespace vulkan
 
     class vulkan
     {
-        const static int WIDTH = 800;
-        const static int HEIGHT = 600;
-
         friend class pipeline;
         friend class mesh;
         friend class buffer;
@@ -50,19 +48,18 @@ namespace vulkan
         std::vector<pipeline*> pipelines;
 
         XSetWindowAttributes windowAttrib;
-        Display *display;
-        Window window;
-
+        interfaces::window *context;
+        
         uint32_t queueFamilyIndex;
         uint32_t queuePresentIndex;
 
         bool init;
 
     public:
-        vulkan() { makeNull(); reset(); }
+        vulkan(interfaces::window *source) { makeNull(); reset(source); }
         ~vulkan() { cleanup(); }
 
-        void reset();
+        void reset(interfaces::window *source);
         bool initalised() { return init; }
 
         shader::shader *createShader(shader::parameters params);
@@ -87,9 +84,6 @@ namespace vulkan
 
     protected:
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);        
-
-    protected:
-        bool createWindow(uint32_t index);
 
     protected:
         void makeNull();

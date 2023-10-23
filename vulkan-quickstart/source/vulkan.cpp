@@ -8,11 +8,12 @@
 #include <cstdint>
 #include <algorithm>
 
-void vulkan::vulkan::reset()
+void vulkan::vulkan::reset(interfaces::window *source)
 {
     init = false; cleanup();
 
-    width = WIDTH; height = HEIGHT;
+    context = source;
+    width = source->getWidth(); height = source->getHeight();
 
     if (!createInstance()) return;
 
@@ -25,7 +26,6 @@ void vulkan::vulkan::reset()
     queueFamilyIndex = 0;
     if(!findQueueFamily(vkPhysicalDevice, queueFamilyIndex)) return;
 
-    if(!createWindow(index)) return;
     if(!createSurface(vkPhysicalDevice, queueFamilyIndex)) return;
 
     queuePresentIndex = 0;
@@ -348,8 +348,8 @@ bool vulkan::vulkan::createSurface(VkPhysicalDevice &device, uint32_t queue)
     VkXlibSurfaceCreateInfoKHR createInfo{};
 
     createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-    createInfo.dpy = display;
-    createInfo.window = window;
+    createInfo.dpy = context->getDisplay();
+    createInfo.window = context->getWindow();
 
     if(vkCreateXlibSurfaceKHR(vkInstance, &createInfo, nullptr, &vkSurface) != VK_SUCCESS) return false;
 
@@ -539,46 +539,10 @@ uint32_t vulkan::vulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFla
     return -1;
 }
 
-bool vulkan::vulkan::createWindow(uint32_t index)
-{
-    int x = 0, y = 0;
-
-	XInitThreads();
-
-	display = XOpenDisplay(NULL);
-
-	windowAttrib.border_pixel = BlackPixel(display, (int)index);
-	windowAttrib.background_pixel = WhitePixel(display, (int)index);
-	windowAttrib.override_redirect = True;
-	windowAttrib.colormap = XCreateColormap(display, RootWindow(display, (int)index),
-    DefaultVisual(display, index), AllocNone);
-	windowAttrib.event_mask = ExposureMask;
-
-	window = XCreateWindow(display, RootWindow(display, (int)index),
-                           x, y, width, height, 0,
-                           DefaultDepth(display, index),
-                           CopyFromParent,
-                           DefaultVisual(display, index),
-                           CWBackPixel | CWColormap | CWBorderPixel | CWEventMask,
-                           &windowAttrib);
-
-	XSelectInput(display, window, ExposureMask | StructureNotifyMask);
-
-	XMapWindow(display, window);
-
-	char caption[20] = "Screen\0";
-
-    XStoreName(display, window, caption);
-
-	return true;
-}
-
 void vulkan::vulkan::makeNull()
 {
     vkInstance = VK_NULL_HANDLE;
     vkDevice = VK_NULL_HANDLE;
-
-    display = NULL;
 
     vkSurface = VK_NULL_HANDLE;
     vkSwapChain = VK_NULL_HANDLE;
@@ -586,8 +550,6 @@ void vulkan::vulkan::makeNull()
 
 void vulkan::vulkan::cleanup()
 {
-//    vkDeviceWaitIdle(vkDevice);
-    
     for(auto mesh: meshes)
     {
         mesh->destroy();
@@ -619,13 +581,6 @@ void vulkan::vulkan::cleanup()
 
     if(vkSwapChain != VK_NULL_HANDLE) vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
     if(vkSurface != VK_NULL_HANDLE) vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
-
-    if (display != NULL)
-	{
-		XFreeColormap(display, windowAttrib.colormap);
-		XDestroyWindow(display, window);
-		XCloseDisplay(display);
-	}
 
     if(vkDevice != VK_NULL_HANDLE) vkDestroyDevice(vkDevice, nullptr);
     if(vkInstance != VK_NULL_HANDLE) vkDestroyInstance(vkInstance, nullptr);

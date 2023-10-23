@@ -6,13 +6,17 @@
 #include "primatives/matrix.h"
 #include "buffer.h"
 #include "constants.h"
+#include "window.h"
 #include <iostream>
 
 using namespace vulkan;
 
 int basicVertexAndFragmentShaders()
 {
-	vulkan::vulkan v;
+	const int width = 800, height = 800;
+
+	vulkan::window w(width, height);
+	vulkan::vulkan v(&w);
 	
 	shader::shader *vertex = v.createShader(shader::parameters(std::string("assets/shaders/compiled/vert.spv"), shader::TYPE::vertex, 3 ));
 	if(vertex == NULL) return 0;
@@ -41,7 +45,10 @@ int basicVertexAndFragmentShaders()
 
 int basicMeshShaders()
 {
-	vulkan::vulkan v;
+	const int width = 800, height = 800;
+
+	vulkan::window w(width, height);
+	vulkan::vulkan v(&w);
 	
 	shader::parameters params(std::string("assets/shaders/compiled/basic.spv"), shader::TYPE::vertex);
 	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
@@ -88,7 +95,10 @@ int basicLoadObjMeshShaders()
 	primatives::mesh pmesh;
 	if(!pmesh.load("assets/meshes/triangle.obj")) return 0;
 
-	vulkan::vulkan v;
+	const int width = 800, height = 800;
+
+	vulkan::window w(width, height);
+	vulkan::vulkan v(&w);
 	
 	shader::parameters params(std::string("assets/shaders/compiled/mesh.spv"), shader::TYPE::vertex);
 	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
@@ -140,7 +150,10 @@ int basicLoadObjMeshShaders()
 
 int basicMeshProjection()
 {
-	vulkan::vulkan v;
+	const int width = 800, height = 800;
+
+	vulkan::window w(width, height);
+	vulkan::vulkan v(&w);
 	
 	shader::parameters params(std::string("assets/shaders/compiled/projection.spv"), shader::TYPE::vertex);
 	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
@@ -251,7 +264,10 @@ int basicMeshProjection()
 
 int basicMeshStorageBuffer()
 {
-	vulkan::vulkan v;
+	const int width = 800, height = 800;
+
+	vulkan::window w(width, height);
+	vulkan::vulkan v(&w);
 	
 	shader::parameters params(std::string("assets/shaders/compiled/storage.spv"), shader::TYPE::vertex);
 	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
@@ -350,7 +366,10 @@ int basicMeshStorageBuffer()
 
 int basicMeshMultipleObjectsWithStorageBuffer()
 {
-	vulkan::vulkan v;
+	const int width = 800, height = 800;
+
+	vulkan::window w(width, height);
+	vulkan::vulkan v(&w);
 	
 	shader::parameters params(std::string("assets/shaders/compiled/multi.spv"), shader::TYPE::vertex);
 	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
@@ -418,15 +437,15 @@ int basicMeshMultipleObjectsWithStorageBuffer()
 
 	std::vector<object> matrices, b_matrices;
 
-	int width = 2, height = 2;
+	int columns = 2, rows = 2;
 	float x_increment = 1.5f, y_increment = 1.5f;
-	float start_x = -((width / 2) * x_increment);
-	float start_y = -((height / 2) * y_increment);
+	float start_x = -((columns / 2) * x_increment);
+	float start_y = -((rows / 2) * y_increment);
 
-	for(int y = 0; y < height; ++y)
+	for(int y = 0; y < rows; ++y)
 	{
 		float y_pos = start_y + (y_increment * ((float)y));
-		for(int x = 0; x < width; ++x)
+		for(int x = 0; x < columns; ++x)
 		{			
 			float x_pos = start_x + (x_increment * ((float)x));
 			object temp;	
@@ -435,7 +454,7 @@ int basicMeshMultipleObjectsWithStorageBuffer()
 			temp.matrix.identity();
 			matrices.push_back(temp);
 
-			temp.position = primatives::matrices::translation({x_pos,y_pos + ((float)height) + y_increment,0.0f});
+			temp.position = primatives::matrices::translation({x_pos,y_pos + ((float)rows) + y_increment,0.0f});
 			b_matrices.push_back(temp);
 		}
 	}
@@ -447,7 +466,7 @@ int basicMeshMultipleObjectsWithStorageBuffer()
 
 	float fov = 90.0f;
 	float near = 0.1, far = 100.0;
-	float ar = (600.0f / 800.0f);
+	float ar = (height / width);
 
 	::vulkan::constants constants;
 	constants.m = primatives::matrices::projection(fov, ar, near, far);
