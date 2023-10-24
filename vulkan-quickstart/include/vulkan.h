@@ -9,6 +9,7 @@
 #include "primatives/mesh.h"
 #include "constants.h"
 #include "buffer.h"
+#include "interfaces/window.h"
 
 #ifndef _VULKAN
 #define _VULKAN
@@ -19,9 +20,6 @@ namespace vulkan
 
     class vulkan
     {
-        const static int WIDTH = 800;
-        const static int HEIGHT = 600;
-
         friend class pipeline;
         friend class mesh;
         friend class buffer;
@@ -30,6 +28,7 @@ namespace vulkan
         int width, height;
 
         VkPhysicalDevice vkPhysicalDevice;
+        VkPhysicalDeviceProperties vkPhysicalDeviceProperties;
 
         VkInstance vkInstance;
         VkDevice vkDevice;
@@ -49,24 +48,23 @@ namespace vulkan
         std::vector<pipeline*> pipelines;
 
         XSetWindowAttributes windowAttrib;
-        Display *display;
-        Window window;
-
+        interfaces::window *context;
+        
         uint32_t queueFamilyIndex;
         uint32_t queuePresentIndex;
 
         bool init;
 
     public:
-        vulkan() { makeNull(); reset(); }
+        vulkan(interfaces::window *source) { makeNull(); reset(source); }
         ~vulkan() { cleanup(); }
 
-        void reset();
+        void reset(interfaces::window *source);
         bool initalised() { return init; }
 
         shader::shader *createShader(shader::parameters params);
         mesh *createMesh(primatives::mesh vertices);
-        buffer *createBuffer(void *data, size_t size);
+        buffer *createBuffer(void *data, size_t size, buffer::TYPE type = buffer::TYPE::uniform);
 
     public:
         pipeline *createPipeline(std::vector<shader::shader*> shaders, std::vector<mesh*> mesh, std::vector<buffer*> buffers, constants *constants);
@@ -85,10 +83,7 @@ namespace vulkan
         VkExtent2D findSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
 
     protected:
-        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
-    protected:
-        bool createWindow(uint32_t index);
+        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);        
 
     protected:
         void makeNull();

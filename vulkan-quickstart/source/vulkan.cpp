@@ -8,11 +8,12 @@
 #include <cstdint>
 #include <algorithm>
 
-void vulkan::vulkan::reset()
+void vulkan::vulkan::reset(interfaces::window *source)
 {
     init = false; cleanup();
 
-    width = WIDTH; height = HEIGHT;
+    context = source;
+    width = source->getWidth(); height = source->getHeight();
 
     if (!createInstance()) return;
 
@@ -25,7 +26,6 @@ void vulkan::vulkan::reset()
     queueFamilyIndex = 0;
     if(!findQueueFamily(vkPhysicalDevice, queueFamilyIndex)) return;
 
-    if(!createWindow(index)) return;
     if(!createSurface(vkPhysicalDevice, queueFamilyIndex)) return;
 
     queuePresentIndex = 0;
@@ -34,7 +34,7 @@ void vulkan::vulkan::reset()
     if(!createDevice(vkPhysicalDevice, queueFamilyIndex, queuePresentIndex)) return;
     if(!createSwapChain(vkPhysicalDevice)) return;
     if(!createImageViews()) return;
-
+    
     init = true;
 }
 
@@ -72,12 +72,12 @@ vulkan::mesh *vulkan::vulkan::createMesh(primatives::mesh vertices)
     return NULL;
 }
 
-vulkan::buffer *vulkan::vulkan::createBuffer(void *data, size_t size)
+vulkan::buffer *vulkan::vulkan::createBuffer(void *data, size_t size, buffer::TYPE type)
 {
     buffer *temp = new buffer();
     if(temp != NULL)
     {
-        if(temp->create(this, data, size))
+        if(temp->create(this, data, size, type))
         {
             buffers.push_back(temp);
             return temp;
@@ -127,7 +127,7 @@ bool vulkan::vulkan::createInstance(bool enableLayer)
     std::vector<VkExtensionProperties> extensionProperties(extensionCount);
     vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, extensionProperties.data());
 
-    std::set<std::string> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME };
+    std::set<std::string> deviceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME };
     std::vector<const char*> extensionNames;
 
     for(uint32_t i = 0; i < extensionCount; ++i)
@@ -208,8 +208,12 @@ VkPhysicalDevice vulkan::vulkan::findDevice(uint32_t index)
 
             //if(deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
             //{
-                std::cout << deviceProperties.deviceName << "\n";
-                if(index == counter) return d;
+                std::cout << "Device [" << deviceProperties.deviceName << "," << deviceProperties.limits.minUniformBufferOffsetAlignment << "," << deviceProperties.limits.minStorageBufferOffsetAlignment << "]" << "\n";
+                if(index == counter) 
+                {
+                    vkPhysicalDeviceProperties = deviceProperties;
+                    return d;
+                }
 
                 ++counter;
             //}
@@ -255,12 +259,27 @@ bool vulkan::vulkan::createDevice(VkPhysicalDevice &device, uint32_t queueFamily
     createInfo.pEnabledFeatures = &deviceFeatures;
 
     const std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,        
+        VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME,
+        VK_EXT_MULTI_DRAW_EXTENSION_NAME
     };
 
     createInfo.enabledExtensionCount = deviceExtensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
+    VkPhysicalDeviceVulkan12Features vulkan12Features = {};
+    vulkan12Features.drawIndirectCount = VK_TRUE;
+    vulkan12Features.pNext = nullptr;
+    vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    
+    VkPhysicalDeviceShaderDrawParametersFeatures shaderDataParameters = {};
+    shaderDataParameters.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES;
+    shaderDataParameters.pNext = &vulkan12Features;
+    shaderDataParameters.shaderDrawParameters = VK_TRUE;
+
+    createInfo.pNext = &shaderDataParameters;
+    
     VkResult result = vkCreateDevice(device, &createInfo, nullptr, &vkDevice);
     if(result != VK_SUCCESS) return false;
 
@@ -329,8 +348,8 @@ bool vulkan::vulkan::createSurface(VkPhysicalDevice &device, uint32_t queue)
     VkXlibSurfaceCreateInfoKHR createInfo{};
 
     createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-    createInfo.dpy = display;
-    createInfo.window = window;
+    createInfo.dpy = context->getDisplay();
+    createInfo.window = context->getWindow();
 
     if(vkCreateXlibSurfaceKHR(vkInstance, &createInfo, nullptr, &vkSurface) != VK_SUCCESS) return false;
 
@@ -342,7 +361,11 @@ bool vulkan::vulkan::createSurface(VkPhysicalDevice &device, uint32_t queue)
 
 bool vulkan::vulkan::findDeviceExtensionSupport(VkPhysicalDevice &device)
 {
-    std::set<std::string> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+    std::set<std::string> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
+                                               VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
+                                               VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME,
+                                               VK_EXT_MULTI_DRAW_EXTENSION_NAME
+                                             };
 
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -351,9 +374,11 @@ bool vulkan::vulkan::findDeviceExtensionSupport(VkPhysicalDevice &device)
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
     for(const auto &extension:availableExtensions)
-    {
-        //std::cout << extension.extensionName << "\n";
-        deviceExtensions.erase(extension.extensionName);
+    {        
+        if(deviceExtensions.erase(extension.extensionName) > 0)
+        {
+            std::cout << extension.extensionName << "\n";
+        }
     }
 
     return deviceExtensions.empty();
@@ -514,46 +539,10 @@ uint32_t vulkan::vulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFla
     return -1;
 }
 
-bool vulkan::vulkan::createWindow(uint32_t index)
-{
-    int x = 0, y = 0;
-
-	XInitThreads();
-
-	display = XOpenDisplay(NULL);
-
-	windowAttrib.border_pixel = BlackPixel(display, (int)index);
-	windowAttrib.background_pixel = WhitePixel(display, (int)index);
-	windowAttrib.override_redirect = True;
-	windowAttrib.colormap = XCreateColormap(display, RootWindow(display, (int)index),
-    DefaultVisual(display, index), AllocNone);
-	windowAttrib.event_mask = ExposureMask;
-
-	window = XCreateWindow(display, RootWindow(display, (int)index),
-                           x, y, width, height, 0,
-                           DefaultDepth(display, index),
-                           CopyFromParent,
-                           DefaultVisual(display, index),
-                           CWBackPixel | CWColormap | CWBorderPixel | CWEventMask,
-                           &windowAttrib);
-
-	XSelectInput(display, window, ExposureMask | StructureNotifyMask);
-
-	XMapWindow(display, window);
-
-	char caption[20] = "Screen\0";
-
-    XStoreName(display, window, caption);
-
-	return true;
-}
-
 void vulkan::vulkan::makeNull()
 {
     vkInstance = VK_NULL_HANDLE;
     vkDevice = VK_NULL_HANDLE;
-
-    display = NULL;
 
     vkSurface = VK_NULL_HANDLE;
     vkSwapChain = VK_NULL_HANDLE;
@@ -561,8 +550,6 @@ void vulkan::vulkan::makeNull()
 
 void vulkan::vulkan::cleanup()
 {
-//    vkDeviceWaitIdle(vkDevice);
-    
     for(auto mesh: meshes)
     {
         mesh->destroy();
@@ -594,13 +581,6 @@ void vulkan::vulkan::cleanup()
 
     if(vkSwapChain != VK_NULL_HANDLE) vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
     if(vkSurface != VK_NULL_HANDLE) vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
-
-    if (display != NULL)
-	{
-		XFreeColormap(display, windowAttrib.colormap);
-		XDestroyWindow(display, window);
-		XCloseDisplay(display);
-	}
 
     if(vkDevice != VK_NULL_HANDLE) vkDestroyDevice(vkDevice, nullptr);
     if(vkInstance != VK_NULL_HANDLE) vkDestroyInstance(vkInstance, nullptr);
