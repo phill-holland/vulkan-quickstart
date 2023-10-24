@@ -17,6 +17,7 @@ set(ALL_LIBS ${Vulkan_LIBRARY})
 file(GLOB SOURCE CONFIGURE_DEPENDS 
 "${PROJECT_SOURCE_DIR}/source/*.cpp"
 "${PROJECT_SOURCE_DIR}/source/primatives/*.cpp"
+"${PROJECT_SOURCE_DIR}/source/core/*.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE})

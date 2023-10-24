@@ -479,7 +479,9 @@ int basicMeshMultipleObjectsWithStorageBuffer()
 
 	float angle = 0.0f;
 
-	while(true)
+	w.start();
+
+	while(!w.terminated())
 	{		
 		pipeline->render();
 
