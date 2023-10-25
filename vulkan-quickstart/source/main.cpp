@@ -356,7 +356,7 @@ int basicMeshStorageBuffer()
 			if(instanceCount == 2) instanceCount = 1;
 			else instanceCount = 2;
 
-			pipeline->update(0,instanceCount, 0);
+			pipeline->update(0, instanceCount, 0);
 			counter = 0;
 		}
 	}
@@ -502,6 +502,131 @@ int basicMeshMultipleObjectsWithStorageBuffer()
 	return 0;
 }
 
+int basicMeshMultipleObjectsWithStorageBufferAndDynamicAddRemove()
+{
+	const int width = 800, height = 800;
+
+	vulkan::window w(width, height);
+	vulkan::vulkan v(&w);
+	
+	shader::parameters params(std::string("assets/shaders/compiled/multi.spv"), shader::TYPE::vertex);
+	params.vertexInputDescriptions.inputBindingDescription = primatives::vertex::getBindingDescription();
+	params.vertexInputDescriptions.inputAttributeDescriptions = primatives::vertex::getAttributeDescriptions();
+
+	shader::shader *vertex = v.createShader(params);
+	if(vertex == NULL) return 0;
+	
+	shader::shader *fragment = v.createShader(shader::parameters(std::string("assets/shaders/compiled/frag.spv"), shader::TYPE::fragment));
+	if(fragment == NULL) return 0;
+
+	std::vector<shader::shader*> shaders;
+
+	shaders.push_back(vertex);
+	shaders.push_back(fragment);
+
+	std::vector<mesh*> meshes;
+
+	primatives::mesh _square;
+	if(!_square.load("assets/meshes/cube.obj")) return 0;
+
+// need to be able to set vertice colour from load
+
+	mesh *square = v.createMesh(_square);
+	if(square == NULL) return 0;
+
+	meshes.push_back(square);
+
+	std::vector<buffer*> buffers;
+
+	class transformations
+	{
+	public:
+		primatives::matrices::matrix4x4 world;
+		primatives::matrices::matrix4x4 object;
+	};
+
+	transformations t;
+	t.world = primatives::matrices::translation({0.8f,-0.8f,-3.8f});
+	t.object.identity();
+
+	vulkan::buffer *buffer = v.createBuffer(&t, sizeof(transformations));
+	buffers.push_back(buffer);
+
+	class object
+	{
+	public:
+		primatives::matrices::matrix4x4 position;
+		primatives::matrices::matrix4x4 matrix;
+	};
+
+	std::vector<object> matrices;
+
+	int columns = 2, rows = 2;
+	float x_increment = 1.5f, y_increment = 1.5f;
+	float start_x = -((columns / 2) * x_increment);
+	float start_y = -((rows / 2) * y_increment);
+
+	for(int y = 0; y < rows; ++y)
+	{
+		float y_pos = start_y + (y_increment * ((float)y));
+		for(int x = 0; x < columns; ++x)
+		{			
+			float x_pos = start_x + (x_increment * ((float)x));
+			object temp;	
+
+			temp.position = primatives::matrices::translation({x_pos,y_pos,0.0f});
+			temp.matrix.identity();
+			matrices.push_back(temp);
+		}
+	}
+	
+	vulkan::buffer *storage = v.createBuffer(matrices.data(), matrices.size() * sizeof(object), buffer::TYPE::storage);
+	buffers.push_back(storage);
+
+	float fov = 90.0f;
+	float near = 0.1, far = 100.0;
+	float ar = (height / width);
+
+	::vulkan::constants constants;
+	constants.m = primatives::matrices::projection(fov, ar, near, far);
+
+	pipeline *pipeline = v.createPipeline(shaders, meshes, buffers, &constants);
+	if(pipeline == NULL) return 0;
+
+	pipeline->update(0, 4, 0);
+
+	float angle = 0.0f;
+
+	w.start();
+
+	int instances = 4;
+
+	while(!w.terminated())
+	{		
+		pipeline->render();
+
+		for(int i = 0; i < matrices.size(); ++i)
+		{
+			matrices[i].matrix = primatives::matrices::rotation::y(angle);		
+		}
+
+		storage->update();
+		angle += 0.0005f;
+
+		char value;
+		if(w.keypressed(value))
+		{			
+			std::cout << "value [" << value << "]\r\n";
+			if((value == '-')&&(instances > 0)) --instances;
+			else if((value == '+')&&(instances < 4)) ++instances;
+
+			pipeline->update(0, instances, 0);
+		}
+	}
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	//basicVertexAndFragmentShaders();
@@ -509,7 +634,8 @@ int main(int argc, char *argv[])
 	//basicLoadObjMeshShaders();
 	//basicMeshProjection();
 	//basicMeshStorageBuffer();
-	basicMeshMultipleObjectsWithStorageBuffer();
+	//basicMeshMultipleObjectsWithStorageBuffer();
+	basicMeshMultipleObjectsWithStorageBufferAndDynamicAddRemove();
 
 	return 0;
 }

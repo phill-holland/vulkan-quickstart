@@ -23,7 +23,6 @@ void vulkan::window::background(core::thread *bt)
 			{
 				for(int i = 0; i < count; ++i)
 				{
-					std::cout << "[" << temp[i] << "]\r\n";
 					data.set(temp[i]);
 				}
 			}
@@ -31,7 +30,7 @@ void vulkan::window::background(core::thread *bt)
 			break;
 		}
 		case ConfigureNotify:
-			std::cout << "move or resize\r\n";
+			std::cout << "ConfigureNotify(move or resize)\r\n";
 			break;
 
 		case DestroyNotify:

@@ -42,6 +42,11 @@ namespace vulkan
         
         bool terminated() { return is_terminated; }
 
+        bool keypressed(char &result)
+        {
+            return data.get(result);
+        }
+
     public:
         Display *getDisplay() { return display; } 
         Window getWindow() { return context; }
