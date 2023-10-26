@@ -529,8 +529,6 @@ int basicMeshMultipleObjectsWithStorageBufferAndDynamicAddRemove()
 	primatives::mesh _square;
 	if(!_square.load("assets/meshes/cube.obj")) return 0;
 
-// need to be able to set vertice colour from load
-
 	mesh *square = v.createMesh(_square);
 	if(square == NULL) return 0;
 
